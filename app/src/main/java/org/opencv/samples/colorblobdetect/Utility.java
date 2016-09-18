@@ -333,7 +333,7 @@ public class Utility {
                 Log.i("POLYGON_TEST", "result = " + result);
             }
         }
-        Log.i("PLOYGON_TEST", "Final Result = " + result);
+        Log.i("POLYGON_TEST", "Final Result = " + result);
         return result;
     }
 

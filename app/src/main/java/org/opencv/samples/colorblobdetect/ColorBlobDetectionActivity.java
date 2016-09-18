@@ -11,6 +11,8 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.preference.PreferenceManager;
 import android.renderscript.ScriptGroup;
 import android.speech.tts.TextToSpeech;
@@ -22,6 +24,7 @@ import android.view.View;
 import android.view.View.OnTouchListener;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Toast;
 
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
@@ -47,6 +50,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -108,9 +112,26 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
     public static int fingerApprovalCount = 0;
 
 
+    // BLUETOOTH Variables
+    // Message types sent from BluetoothService
+    public static final int MESSAGE_STATE_CHANGE = 1;
+    public static final int MESSAGE_READ = 2;
+    public static final int MESSAGE_WRITE = 3;
+    public static final int MESSAGE_DEVICE_NAME = 4;
+    public static final int MESSAGE_TOAST = 5;
 
+    // Key names received from the BluetoothService Handler
+    public static final String DEVICE_NAME = "device_name";
+    public static final String TOAST = "toast";
 
+    // Intent request codes
+    private static final int REQUEST_CONNECT_DEVICE = 1;
+    private static final int REQUEST_ENABLE_BT = 2;
 
+    // local bluetooth adapter
+    private BluetoothAdapter mBluetoothAdapter = null;
+    // member object for service
+    private BluetoothService mBluetoothService = null;
 
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
@@ -160,6 +181,30 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         mUtility = new Utility(getApplicationContext());
         mUtility.parseFile(filename);
 
+
+        // bluetooth initialisation
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if(!mBluetoothAdapter.isEnabled()) {
+            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
+        }
+        else {
+            if (mBluetoothService == null) {
+                mBluetoothService = new BluetoothService(this, mHandler);
+                Log.i(TAG, "Attempting to Connect in OnCreate");
+                String bluetoothAddress = "34:BB:26:A6:C8:76";      // Sumit's phone
+                BluetoothDevice newDevice = mBluetoothAdapter.getRemoteDevice(bluetoothAddress);
+                // only if STATE_NONE we know that the service was not started already
+                if (mBluetoothService.getState() == BluetoothService.STATE_NONE) {
+                    Log.i(TAG, "State is none");
+                    mBluetoothService.connect(newDevice);
+                    Log.i(TAG, "Connected to device");
+                }
+            }
+        }
+
+
+        // speak file name
         final String speakStr = "Scanning " + filename;
         tts = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
             @Override
@@ -170,12 +215,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                 }
             }
         });
-
-
     }
-
-    // to write in bluetooth
-    // mconnectedThread.write(String)
 
     @Override
     public void onPause() {
@@ -183,6 +223,9 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.disableView();
     }
+
+    private final String NAME = "Tactile Reader";
+    private final UUID uuid = UUID.fromString("ff7b2473-5739-4f52-849f-ba46afd9a707");
 
     @Override
     public void onResume() {
@@ -194,12 +237,27 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
             Log.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
+        if(mBluetoothService != null) {
+            Log.i(TAG, "Attempting to Connect");
+            String bluetoothAddress = "34:BB:26:A6:C8:76";      // Sumit's phone
+            BluetoothDevice newDevice = mBluetoothAdapter.getRemoteDevice(bluetoothAddress);
+            // only if STATE_NONE we know that the service was not started already
+            if (mBluetoothService.getState() == BluetoothService.STATE_NONE) {
+                Log.i(TAG, "State is none");
+                mBluetoothService.connect(newDevice);
+                Log.i(TAG, "Connected to device");
+            }
+        }
     }
+
+
 
     public void onDestroy() {
         super.onDestroy();
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.disableView();
+        if(mBluetoothService != null)
+            mBluetoothService.stop();
     }
 
     public void onCameraViewStarted(int width, int height) {
@@ -273,6 +331,26 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         return false; // don't need subsequent touch events
     }
 
+    private void sendMessage(String message) {
+        // check that we are actually connected before trying anything
+        if(mBluetoothService.getState() != BluetoothService.STATE_CONNECTED) {
+//            Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show();
+//            Toast.makeText(this, "Bluetooth Not Connected", Toast.LENGTH_SHORT).show();
+            Message msg = mHandler.obtainMessage(MESSAGE_TOAST);
+            Bundle bundle = new Bundle();
+            bundle.putString("TOAST", "Bluetooth Not Connected");
+            msg.setData(bundle);
+            mHandler.sendMessage(msg);
+            return;
+        }
+        // get the message bytes and tell teh BluetoothService to write
+        byte[] send = message.getBytes();
+        mBluetoothService.write(send);
+
+        // Reset out string buffer to zero and clear the edit text field
+//        mOutStringBuffer.setLength(0);
+
+    }
 
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
 
@@ -296,8 +374,13 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
             Log.i("PULSE", "PulseState: " + pulseState);
             Log.i("PULSE", "ContourSize: " + contours.size());
 
+            Log.i(TAG, "Checking if bluetooth active. State = " + (mBluetoothService.getState() == 3));
+            Log.i(TAG, "Checking contours size = " + contours.size());
+            Log.i(TAG, "Checking calibration = " + calibrated);
+            Log.i(TAG, "Checking TTS = " + !tts.isSpeaking());
+            Log.i(TAG, "Checking mUtility = " + !mUtility.mp.isPlaying());
             // Logic to call state name
-            if (contours.size() == 3 && calibrated && !tts.isSpeaking() && !mUtility.mp.isPlaying()) {
+            if (contours.size() == 3 && calibrated && !tts.isSpeaking() && !mUtility.mp.isPlaying() && mBluetoothService.getState() == 3) {
                 pulseDuration = 0;
                 Point[] centroids;
                 if (mUtility.getOrientation() % 2 == 0) {
@@ -307,16 +390,17 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                 }
                 fingerCentroidX = (int) centroids[1].x;
                 fingerCentroidY = (int) centroids[1].y;
+
                 // sending via bluetooth
-                String fingerCentroidStr = fingerCentroidX + "," + fingerCentroidY;
-//                try {
-//                    Log.i("RANDOM", mConnectedThread.toString());
-//                    mConnectedThread.write(fingerCentroidStr);
-//                    Log.i("BLUETOOTH", "Finger coordinates sent: " + fingerCentroidStr);
-//                } catch (IOException e) {
-//                    Log.e("BLUETOOTH", "Error Sending Coordinates!");
-//                    e.printStackTrace();
-//                }
+                String centroidStrings = "";
+                for(Point centroid : centroids) {
+                    centroidStrings += centroid.toString();
+                    centroidStrings += "+";
+                }
+                sendMessage(centroidStrings);
+//                String fingerCentroidStr = fingerCentroidX + "," + fingerCentroidY;
+//                sendMessage(fingerCentroidStr);
+                Log.i(TAG, "Sent centroids = " + centroidStrings);
 
                 blackCentroidsX = new ArrayList<Integer>();
                 blackCentroidsY = new ArrayList<Integer>();
@@ -576,7 +660,40 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         }
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.i(TAG, "onActivityResult " + resultCode);
+        switch(requestCode) {
+            case REQUEST_ENABLE_BT:
+                if(resultCode == Activity.RESULT_OK) {
+                    // bluetooth now enabled
+                    if (mBluetoothService == null)
+                        mBluetoothService = new BluetoothService(this, mHandler);
+                }
+                else {
+                    Log.d(TAG, "Bluetooth not enabled");
+                    finish();
+                }
+        }
+    }
 
+
+    // the Handler that gets information back from the BLuetoothService
+    private final Handler mHandler = new Handler() {
+        @Override
+        public void handleMessage(Message message) {
+            switch(message.what) {
+                case MESSAGE_WRITE:
+                    byte[] writeBuf = (byte[]) message.obj;
+                    // construct a string from the buffer
+                    String writeMessage = new String(writeBuf);
+                    // TODO send this message
+                case MESSAGE_TOAST:
+                    Toast.makeText(ColorBlobDetectionActivity.this, "Bluetooth Not Connected", Toast.LENGTH_SHORT).show();
+
+            }
+        }
+    };
 
 
 }
