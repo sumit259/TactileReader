@@ -38,7 +38,7 @@ import java.util.UUID;
 public class StartActivity extends Activity {
 
     Spinner spinner;
-    Button newCon, scan;
+    Button newCon, scan, listen;
     SharedPreferences sp;
     TextView colortv;
     RadioGroup or;
@@ -158,24 +158,19 @@ public class StartActivity extends Activity {
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-
-        // BLUETOOTH INITIATION
-//        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-//        if(mBluetoothAdapter == null) {
-//            Log.e("BLUETOOTH", "The device does not support Bluetooth");
-//        }
-//        if(!mBluetoothAdapter.isEnabled()) {
-//            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-//            startActivityForResult(enableBtIntent, 1);
-//        }
-//        Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
-//        if(pairedDevices.size() > 0) {
-//            for(BluetoothDevice device : pairedDevices) {
-//                mDevice = device;
-//            }
-//        }
-
-
+        listen = (Button)findViewById(R.id.button_listen);
+//        listen.setText("Turn Bluetooth mode on");
+        listen.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                listen.setVisibility(View.INVISIBLE);
+//                listen.setText("Turn Bluetooth mode off");
+                sp.edit().putString("context_name", spinner.getSelectedItem().toString()).apply();
+                Log.wtf("MTP", "context_name: " + sp.getString("context_name", "nonon"));
+                Intent intent = new Intent(StartActivity.this, ShowCentroidsActivity.class);
+                startActivity(intent);
+            }
+        });
 
 
     }

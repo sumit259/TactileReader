@@ -397,6 +397,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                     centroidStrings += centroid.toString();
                     centroidStrings += "+";
                 }
+                centroidStrings += pulseState;
                 sendMessage(centroidStrings);
 //                String fingerCentroidStr = fingerCentroidX + "," + fingerCentroidY;
 //                sendMessage(fingerCentroidStr);
@@ -422,7 +423,6 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                         Log.i(TAG, "For polygonTest: " + mUtility.titles.get(i) + " " + i);
                         //if (Imgproc.pointPolygonTest(mUtility.statesContours.get(i), nP, false) > 0*/
                         if (mUtility.polygonTest(nP, mUtility.regionPoints.get(i))) {            // if finger is in region i
-                            Log.i(TAG, "TEST1: IN THE IF " + "i = " + i + " ");
                             Log.i(TAG, "polygontestpassed");
                             Log.i(TAG, "PulsedPolygon: " + pulsedPolygon + " " + Utility.titles.get(i) + " " + i);
                             if (pulseState == -1) {
@@ -445,6 +445,13 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                             }
                             if (mUtility.isPulse() && previousState == i) {
                                 pulseState = 0;
+                                String centroidStringsNew = "";
+                                for(Point centroid : centroids) {
+                                    centroidStringsNew += centroid.toString();
+                                    centroidStringsNew += "+";
+                                }
+                                centroidStringsNew += 2;
+                                sendMessage(centroidStringsNew);
                                 final String toDescribe = mUtility.descriptions.get(pulsedPolygon);
                                 if (toDescribe.startsWith("$AUDIO$")) {
                                     envpath = Environment.getDataDirectory() + File.separator + "Tactile Reader";
@@ -480,6 +487,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                        |
                        | X
      */
+    // can move to utility?
     private Point normalizePoint(Point P) {
         double scalingFactor;
 
@@ -645,6 +653,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         }
     }
 
+    // common utility
     public void speakOut(String toSpeak, Context applicationContext) {
         if (!mUtility.mp.isPlaying() && !tts.isSpeaking()) {
             final String speakStr = toSpeak;

@@ -21,7 +21,7 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
 
     <uses-feature
@@ -51,7 +51,7 @@
             android:screenOrientation="landscape" />
         <activity
             android:name=".FirstActivity"
-            android:label="@string/title_activity_first"></activity>
+            android:label="@string/title_activity_first" />
         <activity
             android:name=".MainActivity"
             android:label="@string/title_activity_main" />
@@ -66,15 +66,18 @@
         </activity>
         <activity
             android:name=".SelectColorActivity"
-            android:label="@string/title_activity_select_color"
             android:configChanges="keyboardHidden|orientation"
-            android:screenOrientation="landscape">
-
-        </activity><!-- ATTENTION: This was auto-generated to add Google Play services to your project for
-     App Indexing.  See https://g.co/AppIndexing/AndroidStudio for more information. -->
+            android:label="@string/title_activity_select_color"
+            android:screenOrientation="landscape"></activity>
+        <!--
+ ATTENTION: This was auto-generated to add Google Play services to your project for
+     App Indexing.  See https://g.co/AppIndexing/AndroidStudio for more information.
+        -->
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
+
+        <activity android:name=".ShowCentroidsActivity"></activity>
     </application>
 
 </manifest>
