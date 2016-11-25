@@ -107,6 +107,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
     //play/pause variables
     public static int ppState = -1;
     private int currSpeak;
+    private boolean inPolygon = false;
 
     // local bluetooth adapter
     private BluetoothAdapter mBluetoothAdapter = null;
@@ -506,10 +507,12 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                 Point nP = normalizePoint(new Point(fingerCentroidX, fingerCentroidY));
                 Log.i(TAG, "Normalized Finger: " + nP.x + " " + nP.y + " " + mUtility.regionPoints.size());
                 if (Utility.isFingerStatic(nP)) {
+                    inPolygon = false;
                     for (int i = 0; i < mUtility.regionPoints.size(); i++) {                    // for each region
                         Log.i(TAG, "For polygonTest: " + mUtility.titles.get(i) + " " + i);
                         //if (Imgproc.pointPolygonTest(mUtility.statesContours.get(i), nP, false) > 0*/
                         if (mUtility.polygonTest(nP, mUtility.regionPoints.get(i))) {            // if finger is in region i
+                            inPolygon = true;
                             Log.i(TAG, "polygontestpassed");
                             Log.i(TAG, "PulsedPolygon: " + pulsedPolygon + " " + Utility.titles.get(i) + " " + i);
                             if (pulseState == -1) {
@@ -602,6 +605,10 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                             }
                             break;
                         }
+                    }
+                    if(tts.isSpeaking() && !inPolygon) {
+                        Log.i("Play_Pause", "Outside any polygon. Speech paused. pulseState = " + pulseState);
+                        tts.stop();
                     }
                 }
             }
