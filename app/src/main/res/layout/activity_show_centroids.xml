@@ -60,5 +60,4 @@
         android:id="@+id/fingerCentroid"
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true" />
-
 </RelativeLayout>

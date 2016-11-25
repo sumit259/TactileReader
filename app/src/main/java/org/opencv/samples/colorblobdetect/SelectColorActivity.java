@@ -58,7 +58,6 @@ public class SelectColorActivity extends Activity implements View.OnTouchListene
     private TextToSpeech tts;
 
     private boolean isMain;
-
     private CameraBridgeViewBase mOpenCvCameraView;
     Button done;
     SharedPreferences sp;
@@ -89,11 +88,9 @@ public class SelectColorActivity extends Activity implements View.OnTouchListene
     public void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "called onCreate");
         super.onCreate(savedInstanceState);
-
         Intent thisIntent = getIntent();
         isMain = thisIntent.getBooleanExtra("isMain", true);
         Log.i(TAG, "isMain = " + isMain);
-
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 

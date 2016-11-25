@@ -33,6 +33,7 @@ public class ShowCentroidsActivity extends Activity {
     // local bluetooth adapter
     private BluetoothAdapter mBluetoothAdapter = null;
 
+
     String filename;
     SharedPreferences sp;
     private TextToSpeech tts;
@@ -68,6 +69,7 @@ public class ShowCentroidsActivity extends Activity {
         corner2 = (TextView)findViewById(R.id.Corner2);
         finger  = (TextView)findViewById(R.id.fingerCentroid);
 
+
         // bluetooth initialisation
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if(mBluetoothAdapter == null){
@@ -83,7 +85,6 @@ public class ShowCentroidsActivity extends Activity {
                 mBluetoothService.start();
             }
         }
-
 
         // speak file name
         final String speakStr = "Scanning " + filename;
@@ -103,6 +104,7 @@ public class ShowCentroidsActivity extends Activity {
         super.onDestroy();
         if(mBluetoothService != null)
             mBluetoothService.stop();
+
     }
 
     // Returns size of screen in pixels

@@ -81,7 +81,6 @@ public class Utility {
     public void changeLastLocation(int polygon, int location) {
         lastLocation.set(polygon, location);
     }
-
     private static Point getPoint(String line) {
         line = line.trim();
         StringTokenizer st = new StringTokenizer(line);
@@ -243,7 +242,6 @@ public class Utility {
             Log.wtf("MTP", "error in parsing");
         }
 
-
     }
 
     public static boolean isPulse() {
@@ -358,7 +356,6 @@ public class Utility {
                 result = !result;
             }
         }
-
         return result;
     }
 

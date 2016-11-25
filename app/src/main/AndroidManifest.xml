@@ -72,6 +72,7 @@
             android:configChanges="orientation|keyboardHidden"
             android:label="select a device to connect"
             android:theme="@android:style/Theme.Holo.Dialog"/>
+>>>>>>> d2119a9de3a0e30b0db49d33e90f9e18faa2aded
     </application>
 
 </manifest>

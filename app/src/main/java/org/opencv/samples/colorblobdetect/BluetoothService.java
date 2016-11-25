@@ -21,7 +21,7 @@ import java.lang.reflect.Method;
 import java.util.UUID;
 
 /**
- * Created by sumit on 14-Sep-16.
+ * Created by chandna on 9-Sep-16.
  */
 public class BluetoothService {
 
@@ -30,6 +30,7 @@ public class BluetoothService {
     // Member fields
     private BluetoothAdapter mBluetoothAdapter;
     private Handler mHandler;
+
     private AcceptThread mAcceptThread;
     private ConnectedThread mConnectedThread;
     private ConnectThread mConnectThread;
@@ -228,7 +229,6 @@ public class BluetoothService {
             }
             mmSocket = temp;
         }
-
         public void run() {
             Log.i("ConnectThread", "BEGIN Connect Thread");
             setName("ConnectThread");
@@ -279,7 +279,6 @@ public class BluetoothService {
             connected(mmSocket, mmDevice);
 
         }
-
         public void cancel() {
             try {
                 mmSocket.close();
@@ -299,7 +298,6 @@ public class BluetoothService {
             mmSocket = socket;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
-
             Log.i(TAG, "Attempting to get tmpIn");
             try {
                 tmpIn = socket.getInputStream();
@@ -353,6 +351,7 @@ public class BluetoothService {
     }
 
     // for server : starts listening for connection
+
     private class AcceptThread extends Thread {
         private final BluetoothServerSocket mmServerSocket;
 
@@ -427,6 +426,5 @@ public class BluetoothService {
             }
         }
     }
-
 
 }

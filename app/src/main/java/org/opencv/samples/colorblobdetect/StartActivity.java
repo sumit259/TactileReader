@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.DialogInterface;
+
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -29,6 +30,7 @@ import org.json.JSONException;
 
 import java.io.File;
 import java.util.ArrayList;
+
 
 public class StartActivity extends Activity {
 
@@ -362,5 +364,6 @@ public class StartActivity extends Activity {
                 break;
         }
     }
+
 
 }
