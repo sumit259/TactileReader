@@ -167,7 +167,7 @@ public class StartActivity extends Activity {
         });
         JSONArray savedColorFF = new JSONArray();
         try {
-            savedColorFF = new JSONArray(sp.getString("touched_color)rgba_ff", "[]"));
+            savedColorFF = new JSONArray(sp.getString("touched_color_rgba_ff", "[]"));
         } catch(JSONException e) {
             e.printStackTrace();
         }

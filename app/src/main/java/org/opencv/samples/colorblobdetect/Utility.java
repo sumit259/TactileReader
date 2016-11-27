@@ -326,6 +326,18 @@ public class Utility {
             mp.stop();
         }
     }
+    public static void fastForwardAudio(int duration) {
+        if(mp.isPlaying()) {
+            Log.i("FAst_Forwarding", "Fast forwarding " + " milliseconds");
+            int location = mp.getCurrentPosition();
+            if(location + duration < mp.getDuration()) {
+                location = location + duration;
+                mp.pause();
+                mp.seekTo(location);
+                mp.start();
+            }
+        }
+    }
 
     Comparator<Point> compY = new Comparator<Point>() {
         @Override

@@ -110,9 +110,13 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
     public static Point previousFingerPosition = null;
     public static int fingerApprovalCount = 0;
 
+    public static int fastForwardText = 2;
+    public static int fastForwardAudio = 10000;
+
     //play/pause variables
     public static int ppState = -1;
     public static int ffState = -1;
+    public static int ffPrevState = -1;
     private int currSpeak;
     private int currSpeakAudio;
     private boolean inPolygon = false;
@@ -528,7 +532,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                         centroidStrings += "+";
                     }
                     centroidStrings += pulseState;
-                    centroidStrings += "\n";
+//                    centroidStrings += "\n";
                     sendMessage(centroidStrings);
                     //                String fingerCentroidStr = fingerCentroidX + "," + fingerCentroidY;
                     //                sendMessage(fingerCentroidStr);
@@ -559,6 +563,25 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                             inPolygon = true;
                             Log.i(TAG, "polygontestpassed");
                             Log.i(TAG, "PulsedPolygon: " + pulsedPolygon + " " + Utility.titles.get(i) + " " + i);
+                            // state machine for fastforward
+                            ffPrevState = ffState;
+                            Log.i("Fast_Forward","ffPrevState: " + ffPrevState);
+                            Log.i("Fast_forward", "ffContourSize: " + ffContours.size());
+                            if(ffContours.size() != 1) {
+                                ffState = 1;
+                            }
+                            else if(ffContours.size() == 1) {
+                                if(ffPrevState == 1)
+                                    ffState = 2;
+                                else
+                                    ffState = 0;
+                            }
+                            if(ffState == 2) {
+                                ffState = 0;
+                                fastForward(pulsedPolygon, fastForwardText);
+                            }
+                            Log.i("Fast_Forward","ffState: " + ffState);
+                            // state machine for pulse
                             if (pulseState == -1) {
                                 pulseState = 0;
                                 pulsedPolygon = i;
@@ -595,6 +618,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                                 }
                             }
                             if (pulseState == 2 && previousState == i) {
+                                Log.i(TAG, "PulseState: " + pulseState);
                                 pulseState = 0;
                                 if(isBluetooth) {
                                     String centroidStringsNew = "";
@@ -603,7 +627,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                                         centroidStringsNew += "+";
                                     }
                                     centroidStringsNew += 2;
-                                    centroidStringsNew += "\n";
+//                                    centroidStringsNew += "\n";
                                     sendMessage(centroidStringsNew);
                                 }
                                 if(!isBluetooth) {
@@ -687,38 +711,44 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
     private void fastForward(int pulsedPolygon, int numStatements) {
         List<String> toDescribeList = mUtility.descriptionStatements.get(pulsedPolygon);
         int size = toDescribeList.size();
-        Log.i("Fast Forwarding", "From " + currSpeak);
-        if(currSpeak + numStatements <= size-1) {
-            currSpeak = currSpeak + numStatements;
-        }
-        else {
-            currSpeak = 0;
-        }
-        Log.i("Fast Forwarding", "To " + currSpeak);
-        tts.stop();
-        for(; currSpeak < toDescribeList.size(); currSpeak++) {
-            if(ppState == 1) {
-                Log.i(TAG, "Speaking from currSpeak = " + currSpeak);
-                String toDescribe = toDescribeList.get(currSpeak);
-                if (toDescribe.startsWith("$AUDIO$")) {
-                    //envpath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS) + File.separator + "Tactile Reader";
-                    mUtility.playAudio(envpath + File.separator + filename, toDescribe, currSpeakAudio);
-                    Log.wtf("MTP", "parsing: " + envpath + "/" + toDescribe);
-                } else {
-                    Log.i(TAG, "toDescribe: " + toDescribe);
-                    //while (tts.isSpeaking()){}
-                    //speakOut(toDescribe, getApplicationContext());
-                    mUtility.changeLastLocation(pulsedPolygon, currSpeak);
-                    //change
-                    if (!mUtility.mp.isPlaying()) {
-                        final String speakStr = toDescribe;
-                        tts.speak(speakStr, TextToSpeech.QUEUE_ADD, null, ""+currSpeak);
-                        //tts.speak(speakStr, TextToSpeech.QUEUE_ADD, null);
+        if(tts.isSpeaking()) {
+            Log.i("Fast Forwarding", "From " + currSpeak);
+            if(currSpeak + numStatements <= size-1) {
+                currSpeak = currSpeak + numStatements;
+            }
+            else {
+                currSpeak = 0;
+            }
+            Log.i("Fast Forwarding", "To " + currSpeak);
+            tts.stop();
+            for(; currSpeak < toDescribeList.size(); currSpeak++) {
+                if(ppState == 1) {
+                    Log.i(TAG, "Speaking from currSpeak = " + currSpeak);
+                    String toDescribe = toDescribeList.get(currSpeak);
+                    if (toDescribe.startsWith("$AUDIO$")) {
+                        //envpath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS) + File.separator + "Tactile Reader";
+                        mUtility.playAudio(envpath + File.separator + filename, toDescribe, currSpeakAudio);
+                        Log.wtf("MTP", "parsing: " + envpath + "/" + toDescribe);
+                    } else {
+                        Log.i(TAG, "toDescribe: " + toDescribe);
+                        //while (tts.isSpeaking()){}
+                        //speakOut(toDescribe, getApplicationContext());
+                        mUtility.changeLastLocation(pulsedPolygon, currSpeak);
+                        //change
+                        if (!mUtility.mp.isPlaying()) {
+                            final String speakStr = toDescribe;
+                            tts.speak(speakStr, TextToSpeech.QUEUE_ADD, null, ""+currSpeak);
+                            //tts.speak(speakStr, TextToSpeech.QUEUE_ADD, null);
+                        }
+                        //change
                     }
-                    //change
                 }
             }
         }
+        if(mUtility.isSpeaking()) {
+            mUtility.fastForwardAudio(fastForwardAudio);
+        }
+
     }
 
     public void speakOut(String toSpeak, Context applicationContext) {
