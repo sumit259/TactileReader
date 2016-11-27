@@ -173,7 +173,7 @@ public class ShowCentroidsActivity extends Activity {
                         final String toDescribe = mUtility.descriptions.get(pulsedPolygon);
                         Log.i("PULSE", "pulse detected... toDescribe: " + toDescribe);
                         if (toDescribe.startsWith("$AUDIO$")) {
-                            mUtility.playAudio(envpath + File.separator + filename, toDescribe);
+                            mUtility.playAudio(envpath + File.separator + filename, toDescribe, 0);
                             Log.wtf("MTP", "parsing: " + envpath + "/" + toDescribe);
                         } else {
                             Log.i(TAG, "toDescribe: " + toDescribe);

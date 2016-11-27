@@ -58,6 +58,7 @@ public class Utility {
     static List<String> descriptions;
     static List<List<String>> descriptionStatements;
     static List<Integer> lastLocation;
+    static List<Integer> lastLocationAudio;
     static List<List<Point>> regionPoints;
     static String audioFormat = ".wav";
     public static int orientation;
@@ -75,11 +76,16 @@ public class Utility {
         descriptions = new ArrayList<String>();
         descriptionStatements = new ArrayList<List<String>>();
         lastLocation = new ArrayList<Integer>();
+        lastLocationAudio = new ArrayList<Integer>();
         regionPoints = new ArrayList<List<Point>>();
+        mp = new MediaPlayer();
     }
 
     public void changeLastLocation(int polygon, int location) {
         lastLocation.set(polygon, location);
+    }
+    public static void changeLastLocationAudio(int polygon, int position) {
+        lastLocationAudio.set(polygon, position);
     }
     private static Point getPoint(String line) {
         line = line.trim();
@@ -233,6 +239,7 @@ public class Utility {
                 descriptionStatements.add(idx, statements);
                 idx++;
                 lastLocation.add(0);
+                lastLocationAudio.add(0);
             }
 
         } catch (
@@ -248,7 +255,11 @@ public class Utility {
         return (ColorBlobDetectionActivity.pulseState == 2);
     }
 
-    public static void playAudio(String filePath, String fileName) {
+    public static boolean isSpeaking() {
+        Log.i("MP", "MediaPlayer Status: " + mp.isPlaying());
+        return mp.isPlaying();
+    }
+    public static void playAudio(String filePath, final String fileName, final int lastLocation) {
         Context appContext = cont;
         mp = new MediaPlayer();
         try {
@@ -258,12 +269,62 @@ public class Utility {
             //Uri contentUri = Uri.fromFile(file_mp4_android);
             //mp.setDataSource(String.valueOf(contentUri));
             mp.setDataSource(filePath + File.separator + fileName + audioFormat);
-            mp.prepare();
+            mp.prepareAsync();
         } catch (IOException e) {
             Log.i("MTP", "Audio File cannot be played");
             e.printStackTrace();
         }
+        //mp3 will be started after completion of preparing...
+        mp.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+            final int ll = lastLocation;
+            @Override
+            public void onPrepared(MediaPlayer player) {
+                mp.seekTo(ll);
+                Log.i("Play_Pause Audio", "Starting audio from location: " + ll);
+                mp.start();
+            }
+        });
+        mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            final String idx = fileName.substring(fileName.length()-1, fileName.length());
+            final Integer polygon = Integer.parseInt(idx);
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                changeLastLocationAudio(polygon, 0);
+            }
+        });
+        // mp.start();
+    }
+    public static void playAudio1(String filePath, String fileName, int lastLocation) {
+        Context appContext = cont;
+        try {
+            //File mediaFile_mp4_android = new File(filePath + File.separator + fileName + audioFormat);
+            //String filePath_mp4_android = String.valueOf(mediaFile_mp4_android);
+            //File file_mp4_android = new File(filePath_mp4_android);
+            //Uri contentUri = Uri.fromFile(file_mp4_android);
+            //mp.setDataSource(String.valueOf(contentUri));
+            mp.setDataSource(filePath + File.separator + fileName + audioFormat);
+            mp.prepareAsync();
+        } catch (IOException e) {
+            Log.i("MTP", "Audio File cannot be played");
+            e.printStackTrace();
+        }
+        mp.seekTo(lastLocation);
+        Log.i("Play_Pause Audio", "Starting audio from location: " + lastLocation);
         mp.start();
+    }
+    public static void pauseAudio(int polygon) {
+        if(mp.isPlaying()) {
+            int location = mp.getCurrentPosition();
+            changeLastLocationAudio(polygon, location);
+            Log.i("Play_Pause Audio", "Pausing audio of polygon: " + polygon + " at location = " + location);
+            mp.stop();
+        }
+    }
+    public static void stopAudio() {
+        if(mp.isPlaying()) {
+            Log.i("Play_Pause Audio", "Audio stopped.");
+            mp.stop();
+        }
     }
 
     Comparator<Point> compY = new Comparator<Point>() {

@@ -39,6 +39,7 @@ public class StartActivity extends Activity {
     Button listen;
     TextView colortv;
     TextView colortvpp;
+    TextView colortvff;
     TextView status_connection;
     RadioGroup or;
     Button make_discoverable;
@@ -104,6 +105,7 @@ public class StartActivity extends Activity {
             public void onClick(View v) {
                 Intent i = new Intent(StartActivity.this, SelectColorActivity.class);
                 i.putExtra("isMain", true);
+                i.putExtra("isFF", false);
                 Log.i(TAG, "Starting SelectColorActivity with isMain = true");
                 startActivity(i);
                 finish();
@@ -132,6 +134,7 @@ public class StartActivity extends Activity {
             public void onClick(View v) {
                 Intent i = new Intent(StartActivity.this, SelectColorActivity.class);
                 i.putExtra("isMain", false);
+                i.putExtra("isFF", false);
                 Log.i(TAG, "Starting SelectColorActivity with isMain = false");
                 startActivity(i);
                 finish();
@@ -145,9 +148,34 @@ public class StartActivity extends Activity {
         }
         if(!(savedColorPP==null || savedColorPP.length()==0)) {
             try {
-                colortvpp.setBackgroundColor(Color.argb(savedColorPP.getInt(3), savedColorPP.getInt(0), savedColorPP.getInt(1), savedColorPP.getInt((2))));
+                colortvpp.setBackgroundColor(Color.argb(savedColorPP.getInt(3), savedColorPP.getInt(0), savedColorPP.getInt(1), savedColorPP.getInt(2)));
             } catch (JSONException e) {
-                e.printStackTrace();;
+                e.printStackTrace();
+            }
+        }
+        // selecting color for fast forward
+        colortvff = (TextView)findViewById(R.id.colortvff);
+        colortvff.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(StartActivity.this, SelectColorActivity.class);
+                i.putExtra("isMain", false);
+                i.putExtra("isFF", true);
+                startActivity(i);
+                finish();
+            }
+        });
+        JSONArray savedColorFF = new JSONArray();
+        try {
+            savedColorFF = new JSONArray(sp.getString("touched_color)rgba_ff", "[]"));
+        } catch(JSONException e) {
+            e.printStackTrace();
+        }
+        if(!(savedColorFF==null || savedColorFF.length()==0)) {
+            try {
+                colortvff.setBackgroundColor(Color.argb(savedColorFF.getInt(3), savedColorFF.getInt(0), savedColorFF.getInt(1), savedColorFF.getInt(2)));
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
         }
 

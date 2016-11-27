@@ -39,6 +39,7 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
+import java.io.IOError;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -50,15 +51,18 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
 
     private boolean mIsColorSelected = false;
     private boolean ppIsColorSelected = false;
+    private boolean ffIsColorSelected = false;
     private Mat mRgba;
     private Scalar mBlobColorRgba;
     private Scalar mBlobColorHsv;
     private Scalar mBlobColorRgbaPP;
     private Scalar mBlobColorHsvPP;
+    private Scalar mBlobColorRgbaFF;
+    private Scalar mBlobColorHsvFF;
     private TextToSpeech tts;
 
 //    String envpath = Environment.getDataDirectory().getPath() + File.separator + "Tactile Reader";
-     String envpath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS) + "/Tactile Reader";
+     final String envpath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS) + "/Tactile Reader";
 
 
 
@@ -66,6 +70,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
 
     private ColorBlobDetector mDetector;
     private ColorBlobDetector ppDetector;
+    private ColorBlobDetector ffDetector;
 
     // private ColorBlobDetector    mBlackDetector;
     private Utility mUtility;
@@ -74,6 +79,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
     private Size SPECTRUM_SIZE;
     private Scalar CONTOUR_COLOR;
     private Scalar CONTOUR_COLOR_PP;
+    private Scalar CONTOUR_COLOR_FF;
 
     private List<Integer> blackCentroidsX;
     private List<Integer> blackCentroidsY;
@@ -106,7 +112,9 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
 
     //play/pause variables
     public static int ppState = -1;
+    public static int ffState = -1;
     private int currSpeak;
+    private int currSpeakAudio;
     private boolean inPolygon = false;
 
     // local bluetooth adapter
@@ -202,7 +210,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
             public void onInit(int status) {
                 if (status != TextToSpeech.ERROR) {
                     tts.setLanguage(Locale.ENGLISH);
-//                    tts.speak(speakStr, TextToSpeech.QUEUE_FLUSH, null);
+                    tts.speak(speakStr, TextToSpeech.QUEUE_FLUSH, null);
                 }
             }
         });
@@ -285,6 +293,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
     public void onDestroy() {
         super.onDestroy();
         tts.stop();
+        mUtility.stopAudio();
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.disableView();
         if(mBluetoothService != null)
@@ -295,16 +304,20 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         mRgba = new Mat(height, width, CvType.CV_8UC4);
         mDetector = new ColorBlobDetector();
         ppDetector = new ColorBlobDetector();
+        ffDetector = new ColorBlobDetector();
         // mBlackDetector = new ColorBlobDetector();
         mSpectrum = new Mat();
         mBlobColorRgba = new Scalar(255);
         mBlobColorHsv = new Scalar(255);
         mBlobColorRgbaPP = new Scalar(255);
         mBlobColorHsvPP = new Scalar(255);
+        mBlobColorRgbaFF = new Scalar(255);
+        mBlobColorHsvFF = new Scalar(255);
         // mBlackColorHsv = new Scalar(0,0,0,255);
         SPECTRUM_SIZE = new Size(200, 64);
         CONTOUR_COLOR = new Scalar(0, 255, 0, 255);
         CONTOUR_COLOR_PP = new Scalar(0, 255, 0, 255);
+        CONTOUR_COLOR_FF = new Scalar(0, 255, 0, 255);
 
         displayColor();
     }
@@ -362,14 +375,39 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         Log.i(TAG, "Saved rgba color PP: (" + mBlobColorRgbaPP.val[0] + ", " + mBlobColorRgbaPP.val[1] +
                 ", " + mBlobColorRgbaPP.val[2] + ", " + mBlobColorRgbaPP.val[3] + ")");
 
+        JSONArray savedColorFF = new JSONArray();
+        try {
+            savedColorFF = new JSONArray(sp.getString("touched_color_hsv_ff", "[]"));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        if(savedColorFF == null || savedColorFF.length() == 0) {
+            for(int i=0; i<mBlobColorHsvFF.val.length; i++) {
+                mBlobColorHsvFF.val[i] = 0;
+            }
+        } else {
+            for(int i=0; i<mBlobColorHsvFF.val.length; i++) {
+                try {
+                    mBlobColorHsvFF.val[i] = savedColorFF.getDouble(i);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        mBlobColorRgbaFF = mUtility.convertScalarHsv2Rgba(mBlobColorHsvFF);
+        Log.i(TAG, "Saved rgba color FF: (" + mBlobColorRgbaFF.val[0] + ", " + mBlobColorRgbaFF.val[1] +
+                ", " + mBlobColorRgbaFF.val[2] + ", " + mBlobColorRgbaFF.val[3] + ")");
+
         mDetector.setHsvColor(mBlobColorHsv);
         ppDetector.setHsvColor(mBlobColorHsvPP);
+        ffDetector.setHsvColor(mBlobColorHsvFF);
 
-        // TODO: Check what this does
         Imgproc.resize(mDetector.getSpectrum(), mSpectrum, SPECTRUM_SIZE);
         Imgproc.resize(ppDetector.getSpectrum(), mSpectrum, SPECTRUM_SIZE);
+        Imgproc.resize(ffDetector.getSpectrum(), mSpectrum, SPECTRUM_SIZE);
         mIsColorSelected = true;
         ppIsColorSelected = true;
+        ffIsColorSelected = true;
     }
 
     public boolean onTouch(View v, MotionEvent event) {
@@ -432,10 +470,16 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
             Imgproc.drawContours(mRgba, contours, -1, CONTOUR_COLOR);
             // play/pause
             List<MatOfPoint> ppContours = new ArrayList<>();
+            List<MatOfPoint> ffContours = new ArrayList<>();
             if(ppIsColorSelected) {
                 ppDetector.process(mRgba);
                 ppContours = ppDetector.getContours();
                 Imgproc.drawContours(mRgba, ppContours, -1, CONTOUR_COLOR_PP);
+            }
+            if(ffIsColorSelected) {
+                ffDetector.process(mRgba);
+                ffContours = ffDetector.getContours();
+                Imgproc.drawContours(mRgba, ffContours, -1, CONTOUR_COLOR_FF);
             }
 
             //changeCalibrationState(contours, getApplicationContext());
@@ -465,7 +509,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
             Log.i(TAG, "Checking TTS = " + !tts.isSpeaking());
             Log.i(TAG, "Checking mUtility = " + !mUtility.mp.isPlaying());
             // Logic to call state name
-            if (contours.size() == 3 && calibrated && !mUtility.mp.isPlaying()){// && !tts.isSpeaking()) {// && mBluetoothService.getState() == 3) {
+            if (contours.size() == 3 && calibrated){// && !mUtility.mp.isPlaying()){// && !tts.isSpeaking()) {// && mBluetoothService.getState() == 3) {
                 pulseDuration = 0;
                 Point[] centroids;
                 if (mUtility.getOrientation() % 2 == 0) {
@@ -538,9 +582,17 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                                 }
                             }
                             // arbit entry. adjust somewhere
-                            if(tts.isSpeaking() && ppState != 1 && pulseState == 0) {
-                                Log.i("Play_Pause", "Pausing pulsedPolygon = " + pulsedPolygon + " with currSpeak = " + currSpeak);
-                                pauseTTS(pulsedPolygon, currSpeak);
+                            if(ppState != 1 && pulseState == 0) {
+                                Log.i("Play_Pause", "Pausing pulsedPolygon = " + pulsedPolygon + " with currSpeak = " + currSpeak +" " +
+                                        "and currSpeakAudio = " + currSpeakAudio);
+                                if(mUtility.isSpeaking()) {
+                                    Log.i("Play_Pause", "Pausing MediaPlayer");
+                                    pauseAudio(pulsedPolygon);
+                                }
+                                if(tts.isSpeaking()) {
+                                    Log.i("Play_Pause", "Pausing TTS");
+                                    pauseTTS(pulsedPolygon, currSpeak);
+                                }
                             }
                             if (pulseState == 2 && previousState == i) {
                                 pulseState = 0;
@@ -559,24 +611,26 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                                     final List<String> toDescribeList = mUtility.descriptionStatements.get(pulsedPolygon);
                                     Log.i(TAG, "Starting to Speak. ppState: " + ppState + " toDescribeList.size = " + toDescribeList.size());
                                     currSpeak = mUtility.lastLocation.get(pulsedPolygon);
+                                    currSpeakAudio = mUtility.lastLocationAudio.get(pulsedPolygon);
                                     Log.i("PLAY_PAUSE", "Speaking with pulsedPolygon = " + pulsedPolygon + " currSpeak = " + currSpeak);
                                     //TextToSpeech tts = new TextToSpeech(this, this);
                                     if(currSpeak >= toDescribeList.size()-1)
                                         currSpeak = 0;
                                     if(ppState != 1) {
-                                        pauseTTS(pulsedPolygon, currSpeak);
+                                        if(tts.isSpeaking())
+                                            pauseTTS(pulsedPolygon, currSpeak);
+                                        if(mUtility.isSpeaking())
+                                            pauseAudio(pulsedPolygon);
                                     }
                                     for(currSpeak = mUtility.lastLocation.get(pulsedPolygon); currSpeak < toDescribeList.size(); currSpeak++) {
                                         if(ppState == 1) {
-                                            Log.i(TAG, "Speaking from currSpeak = " + currSpeak);
                                             String toDescribe = toDescribeList.get(currSpeak);
                                             if (toDescribe.startsWith("$AUDIO$")) {
-                                                envpath = Environment.getDataDirectory() + File.separator + "Tactile Reader";
-
-                                                mUtility.playAudio(envpath + File.separator + filename, toDescribe);
-
+                                                Log.i(TAG, "Speaking from currSpeakAudio = " + currSpeakAudio);
+                                                mUtility.playAudio(envpath + File.separator + filename, toDescribe, currSpeakAudio);
                                                 Log.wtf("MTP", "parsing: " + envpath + "/" + toDescribe);
                                             } else {
+                                                Log.i(TAG, "Speaking from currSpeak = " + currSpeak);
                                                 Log.i(TAG, "toDescribe: " + toDescribe);
                                                 //while (tts.isSpeaking()){}
                                                 //speakOut(toDescribe, getApplicationContext());
@@ -589,11 +643,6 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                                                 }
                                                 //change
                                             }
-                                        } else {
-                                            Log.i("PLAY-PAUSE", "Speech Paused... currSpeak = " + currSpeak);
-                                            tts.stop();
-                                            mUtility.changeLastLocation(pulsedPolygon, currSpeak);
-                                            break;
                                         }
                                     }
                                     Log.i(TAG, "speech over. currSpeak = " + currSpeak);
@@ -606,9 +655,13 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                             break;
                         }
                     }
-                    if(tts.isSpeaking() && !inPolygon) {
+                    if(!inPolygon) {
                         Log.i("Play_Pause", "Outside any polygon. Speech paused. pulseState = " + pulseState);
-                        tts.stop();
+                        if(tts.isSpeaking())
+                            tts.stop();
+                        if(mUtility.isSpeaking()) {
+                            mUtility.stopAudio();
+                        }
                     }
                 }
             }
@@ -626,6 +679,46 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         tts.stop();
         if(pulsedPolygon != -1)
             mUtility.changeLastLocation(pulsedPolygon, currSpeak);
+    }
+    private void pauseAudio(int pulsedPolygon) {
+        Log.i("Play_Pause", "Pausing Audio. PulsedPolygon = " + pulsedPolygon);
+        mUtility.pauseAudio(pulsedPolygon);
+    }
+    private void fastForward(int pulsedPolygon, int numStatements) {
+        List<String> toDescribeList = mUtility.descriptionStatements.get(pulsedPolygon);
+        int size = toDescribeList.size();
+        Log.i("Fast Forwarding", "From " + currSpeak);
+        if(currSpeak + numStatements <= size-1) {
+            currSpeak = currSpeak + numStatements;
+        }
+        else {
+            currSpeak = 0;
+        }
+        Log.i("Fast Forwarding", "To " + currSpeak);
+        tts.stop();
+        for(; currSpeak < toDescribeList.size(); currSpeak++) {
+            if(ppState == 1) {
+                Log.i(TAG, "Speaking from currSpeak = " + currSpeak);
+                String toDescribe = toDescribeList.get(currSpeak);
+                if (toDescribe.startsWith("$AUDIO$")) {
+                    //envpath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS) + File.separator + "Tactile Reader";
+                    mUtility.playAudio(envpath + File.separator + filename, toDescribe, currSpeakAudio);
+                    Log.wtf("MTP", "parsing: " + envpath + "/" + toDescribe);
+                } else {
+                    Log.i(TAG, "toDescribe: " + toDescribe);
+                    //while (tts.isSpeaking()){}
+                    //speakOut(toDescribe, getApplicationContext());
+                    mUtility.changeLastLocation(pulsedPolygon, currSpeak);
+                    //change
+                    if (!mUtility.mp.isPlaying()) {
+                        final String speakStr = toDescribe;
+                        tts.speak(speakStr, TextToSpeech.QUEUE_ADD, null, ""+currSpeak);
+                        //tts.speak(speakStr, TextToSpeech.QUEUE_ADD, null);
+                    }
+                    //change
+                }
+            }
+        }
     }
 
     public void speakOut(String toSpeak, Context applicationContext) {
