@@ -33,7 +33,6 @@ public class ShowCentroidsActivity extends Activity {
     // local bluetooth adapter
     private BluetoothAdapter mBluetoothAdapter = null;
 
-
     String filename;
     SharedPreferences sp;
     private TextToSpeech tts;
@@ -47,7 +46,7 @@ public class ShowCentroidsActivity extends Activity {
     public int pulsedPolygon = -1;
     private int previousState = -1;
 
-    String envpath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS) + "/Tactile Reader";
+    final String envpath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS) + "/Tactile Reader";
 
     TextView corner1, corner2, finger;
 
@@ -69,7 +68,6 @@ public class ShowCentroidsActivity extends Activity {
         corner2 = (TextView)findViewById(R.id.Corner2);
         finger  = (TextView)findViewById(R.id.fingerCentroid);
 
-
         // bluetooth initialisation
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if(mBluetoothAdapter == null){
@@ -85,6 +83,7 @@ public class ShowCentroidsActivity extends Activity {
                 mBluetoothService.start();
             }
         }
+
 
         // speak file name
         final String speakStr = "Scanning " + filename;
@@ -104,7 +103,6 @@ public class ShowCentroidsActivity extends Activity {
         super.onDestroy();
         if(mBluetoothService != null)
             mBluetoothService.stop();
-
     }
 
     // Returns size of screen in pixels
@@ -175,10 +173,7 @@ public class ShowCentroidsActivity extends Activity {
                         final String toDescribe = mUtility.descriptions.get(pulsedPolygon);
                         Log.i("PULSE", "pulse detected... toDescribe: " + toDescribe);
                         if (toDescribe.startsWith("$AUDIO$")) {
-                            envpath = Environment.getDataDirectory() + File.separator + "Tactile Reader";
-
                             mUtility.playAudio(envpath + File.separator + filename, toDescribe);
-
                             Log.wtf("MTP", "parsing: " + envpath + "/" + toDescribe);
                         } else {
                             Log.i(TAG, "toDescribe: " + toDescribe);
@@ -313,7 +308,7 @@ public class ShowCentroidsActivity extends Activity {
         }
     }
 
-//     the Handler that gets information back from the BluetoothService
+    //     the Handler that gets information back from the BluetoothService
     public Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message message) {
