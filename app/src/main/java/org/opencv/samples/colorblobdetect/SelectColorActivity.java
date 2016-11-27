@@ -46,6 +46,7 @@ public class SelectColorActivity extends Activity implements View.OnTouchListene
 
     private ColorBlobDetector    mDetector;
     private ColorBlobDetector    ppDetector;
+    private ColorBlobDetector    ffDetector;
 
     // private ColorBlobDetector    mBlackDetector;
     private Utility              mUtility;
@@ -58,6 +59,7 @@ public class SelectColorActivity extends Activity implements View.OnTouchListene
     private TextToSpeech tts;
 
     private boolean isMain;
+    private boolean isFF;
     private CameraBridgeViewBase mOpenCvCameraView;
     Button done;
     SharedPreferences sp;
@@ -90,7 +92,9 @@ public class SelectColorActivity extends Activity implements View.OnTouchListene
         super.onCreate(savedInstanceState);
         Intent thisIntent = getIntent();
         isMain = thisIntent.getBooleanExtra("isMain", true);
+        isFF = thisIntent.getBooleanExtra("isFF", false);
         Log.i(TAG, "isMain = " + isMain);
+        Log.i(TAG, "isFF = " + isFF);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
@@ -146,6 +150,7 @@ public class SelectColorActivity extends Activity implements View.OnTouchListene
         mRgba = new Mat(height, width, CvType.CV_8UC4);
         mDetector = new ColorBlobDetector();
         ppDetector = new ColorBlobDetector();
+        ffDetector = new ColorBlobDetector();
         // mBlackDetector = new ColorBlobDetector();
         mSpectrum = new Mat();
         mBlobColorRgba = new Scalar(255);
@@ -247,6 +252,11 @@ public class SelectColorActivity extends Activity implements View.OnTouchListene
             Log.i(TAG, "isMain = " + isMain +". Storing data in non-pp");
             sp.edit().putString("touched_color_hsv", hsv.toString()).apply();
             sp.edit().putString("touched_color_rgba", rgba.toString()).apply();
+        }
+        else if(isFF) {
+            Log.i(TAG, "isFF = " + isFF + ". Storing data in ff");
+            sp.edit().putString("touched_color_hsv_ff", hsv.toString()).apply();
+            sp.edit().putString("touched_color_rgba_ff", rgba.toString()).apply();
         }
         else {
             Log.i(TAG, "isMain = " + isMain +". Storing data in pp");

@@ -177,7 +177,7 @@ public class ShowCentroidsActivity extends Activity {
                         if (toDescribe.startsWith("$AUDIO$")) {
                             envpath = Environment.getDataDirectory() + File.separator + "Tactile Reader";
 
-                            mUtility.playAudio(envpath + File.separator + filename, toDescribe);
+                            mUtility.playAudio(envpath + File.separator + filename, toDescribe, 0);
 
                             Log.wtf("MTP", "parsing: " + envpath + "/" + toDescribe);
                         } else {
