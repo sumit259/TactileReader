@@ -218,6 +218,8 @@ public class ShowCentroidsActivity extends Activity {
             int id = pulse.indexOf("{");
             pulse = pulse.substring(0,id);
         }
+        String[] splits = pulse.split("\n");
+        pulse = splits[0];
         return Integer.valueOf(pulse);
     }
 

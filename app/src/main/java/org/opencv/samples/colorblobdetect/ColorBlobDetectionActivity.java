@@ -111,7 +111,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
     public static int fingerApprovalCount = 0;
 
     public static int fastForwardText = 2;
-    public static int fastForwardAudio = 10000;
+    public static int fastForwardAudio = 5000;
 
     //play/pause variables
     public static int ppState = -1;
@@ -486,7 +486,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                 Imgproc.drawContours(mRgba, ffContours, -1, CONTOUR_COLOR_FF);
             }
 
-            //changeCalibrationState(contours, getApplicationContext());
+            changeCalibrationState(contours, getApplicationContext());
             if (contours.size() == 2 && calibrated && (pulseState == 0)) {
                 pulseDuration++;
                 Log.i("PULSE", "PulseDuration: " + pulseDuration);
@@ -496,7 +496,8 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                 }
             }
             // change play/pause state
-            if(ppContours.size() == 1) {
+//            ppState = 1;
+            if(ppContours.size() > 0) {
                 ppState = 1;
             } else {
                 ppState = 0;
@@ -532,7 +533,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                         centroidStrings += "+";
                     }
                     centroidStrings += pulseState;
-//                    centroidStrings += "\n";
+                    centroidStrings += "\n";
                     sendMessage(centroidStrings);
                     //                String fingerCentroidStr = fingerCentroidX + "," + fingerCentroidY;
                     //                sendMessage(fingerCentroidStr);
@@ -567,10 +568,10 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                             ffPrevState = ffState;
                             Log.i("Fast_Forward","ffPrevState: " + ffPrevState);
                             Log.i("Fast_forward", "ffContourSize: " + ffContours.size());
-                            if(ffContours.size() != 1) {
+                            if(ffContours.size() == 0) {
                                 ffState = 1;
                             }
-                            else if(ffContours.size() == 1) {
+                            else {
                                 if(ffPrevState == 1)
                                     ffState = 2;
                                 else
@@ -627,7 +628,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                                         centroidStringsNew += "+";
                                     }
                                     centroidStringsNew += 2;
-//                                    centroidStringsNew += "\n";
+                                    centroidStringsNew += "\n";
                                     sendMessage(centroidStringsNew);
                                 }
                                 if(!isBluetooth) {
@@ -717,7 +718,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                 currSpeak = currSpeak + numStatements;
             }
             else {
-                currSpeak = 0;
+                currSpeak = size;
             }
             Log.i("Fast Forwarding", "To " + currSpeak);
             tts.stop();
@@ -895,6 +896,34 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         }
     }
 
+    /*
+        given: contours has size = 2
+        return true if both are corner tags
+        return false if one of them is finger tag
+     */
+    public boolean isCornerInView(List<MatOfPoint> contours) {
+        Point[] centroids;
+        if (mUtility.getOrientation() % 2 == 0) {
+            centroids = mUtility.getCentroid(contours, mUtility.compX);
+        } else {
+            centroids = mUtility.getCentroid(contours, mUtility.compY);
+        }
+        Log.wtf("CALIBRATE", "count of centroids: " + centroids.length);
+        Log.wtf("CALIBRATE", "centroid 1: " + centroids[0].x + ", " + centroids[0].y);
+        Log.wtf("CALIBRATE", "centroid 2: " + centroids[1].x + ", " + centroids[1].y);
+        double x1 = centroids[0].x;
+        double y1 = centroids[0].y;
+        double x2 = centroids[1].x;
+        double y2 = centroids[1].y;
+        if (mUtility.getOrientation() % 2 == 0) {
+            double del_y = (y1 > y2) ? (y1-y2) : (y2-y1);
+            return (del_y < 100);
+        } else {
+            double del_x = (x1 > x2) ? (x1-x2) : (x2-x1);
+            return (del_x < 100);
+        }
+    }
+
     public void changeCalibrationState(List<MatOfPoint> contours, Context applicationContext) {
         boolean prevCalibrationState = calibrated;
         if (contours.size() == 0 || contours.size() == 1) {
@@ -907,15 +936,16 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                 continousFrameBehaivior = 0;
             }
             Log.i("CalCheck", "NotCalibrated2");
-            if ((prevCalibrationState != calibrated) || (calibrationTagsNotVisible > calibrationFrameRate * 2)) {
-                String toSpeak = "Image not placed";
+            if ((prevCalibrationState != calibrated) || (calibrationTagsNotVisible > calibrationFrameRate)) {
+                String toSpeak = "Corner tags not in view";
                 speakOut(toSpeak, applicationContext);
                 calibrationTagsNotVisible = 0;
             }
         } else if (contours.size() == 2 || contours.size() == 3) {
             continousFrameBehaivior = 0;
             calibrationTagsNotVisible = 0;
-            calibrated = isInView(contours);
+//            calibrated = isInView(contours);
+            calibrated = (contours.size()==3) || isCornerInView(contours);
             Log.i("CALIBRATION", "IsCalibrated: " + calibrated);
             if (calibrated) {
                 calibrationCount++;
@@ -923,7 +953,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                 noCalibrationCount = 0;
                 if (prevCalibrationState != calibrated) {
                     calibrationCount = 0;
-                    final String toSpeak = "Image now in view";
+                    final String toSpeak = "Both tags now in view";
                     Log.i("CalCheck", "Calibrated");
                     // Add in queue even if tts isSpeaking(), speakOut doesn't add if isSpeaking()
                     speakOut(toSpeak, applicationContext);
@@ -933,7 +963,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                 calibrationCount = 0;
                 if ((prevCalibrationState != calibrated) || (noCalibrationCount > calibrationFrameRate)) {
                     noCalibrationCount = 0;
-                    final String toSpeak = "Only part of image visible";
+                    final String toSpeak = "One corner tag missing";
                     Log.i("CalCheck", "NotCalibrated");
                     speakOut(toSpeak, applicationContext);
                 }
