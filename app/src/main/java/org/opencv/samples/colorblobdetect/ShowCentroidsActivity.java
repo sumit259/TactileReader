@@ -101,6 +101,7 @@ public class ShowCentroidsActivity extends Activity {
     public void onDestroy() {
         Log.i(TAG, "in onDestroy of ShowCentroidsActivity");
         super.onDestroy();
+        tts.stop();
         if(mBluetoothService != null)
             mBluetoothService.stop();
     }
