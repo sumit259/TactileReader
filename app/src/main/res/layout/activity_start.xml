@@ -47,21 +47,24 @@
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:id="@+id/colortv"
-            android:layout_marginTop="10dp" />
+            android:layout_marginTop="10dp"
+            android:contentDescription="tag color" />
 
         <TextView
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:id="@+id/colortvpp"
             android:layout_marginTop="10dp"
-            android:layout_marginLeft="50dp"/>
+            android:layout_marginLeft="50dp"
+            android:contentDescription="pause play tag color" />
 
         <TextView
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:id="@+id/colortvff"
             android:layout_marginTop="10dp"
-            android:layout_marginLeft="50dp"/>
+            android:layout_marginLeft="50dp"
+            android:contentDescription="fast forward tag color" />
         </LinearLayout>
 
         <TextView

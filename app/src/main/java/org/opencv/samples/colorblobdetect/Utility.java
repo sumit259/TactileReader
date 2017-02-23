@@ -354,7 +354,7 @@ public class Utility {
     };
 
     public Point[] getCentroid(List<MatOfPoint> Contour, Comparator comp) {
-        if (Contour.size() == 2) {
+        if (Contour.size() == 2 || Contour.size() == 1) {
             return getCentroid2(Contour, comp);
         } else {
             return getCentroid3(Contour, comp);
@@ -450,7 +450,7 @@ public class Utility {
      3. left tag @ 3 & right tag @ 4
      4. left tag @ 4 & right tag @ 1
      */
-    // Retuns orientation number between 1 to 4
+    // Returns orientation number between 1 to 4
     public static int getOrientation() {
         return orientation;
     }

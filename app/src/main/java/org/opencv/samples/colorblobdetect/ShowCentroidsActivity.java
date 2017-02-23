@@ -103,6 +103,8 @@ public class ShowCentroidsActivity extends Activity {
         super.onDestroy();
         if(mBluetoothService != null)
             mBluetoothService.stop();
+        tts.stop();
+        mUtility.stopAudio();
     }
 
     // Returns size of screen in pixels

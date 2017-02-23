@@ -112,6 +112,7 @@ public class StartActivity extends Activity {
             }
         });
 
+//      // colortv.setContentDescription("tag color");
         JSONArray savedColor = new JSONArray();
         try {
             savedColor = new JSONArray(sp.getString("touched_color_rgba", "[]"));
