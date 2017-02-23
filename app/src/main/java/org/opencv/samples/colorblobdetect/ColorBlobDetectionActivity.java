@@ -111,7 +111,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
     public static int fingerApprovalCount = 0;
 
     public static int fastForwardText = 2;
-    public static int fastForwardAudio = 5000;
+    public static int fastForwardAudio = 5000;  // in milliseconds
 
     //play/pause variables
     public static int ppState = -1;
@@ -527,17 +527,19 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
 
                 if(isBluetooth) {
                     // sending via bluetooth
-                    String centroidStrings = "";
+                    String centroidStringsNew = "";
                     for (Point centroid : centroids) {
-                        centroidStrings += centroid.toString();
-                        centroidStrings += "+";
+                        centroidStringsNew += centroid.toString();
+                        centroidStringsNew += "+";
                     }
-                    centroidStrings += pulseState;
-                    centroidStrings += "\n";
-                    sendMessage(centroidStrings);
+                    centroidStringsNew += "pulseState:"+pulseState+"+";
+                    centroidStringsNew += "ppState:"+ppState+"+";
+                    centroidStringsNew += "ffState:"+ffState+"+";
+                    centroidStringsNew += "\n";
+                    sendMessage(centroidStringsNew);
                     //                String fingerCentroidStr = fingerCentroidX + "," + fingerCentroidY;
                     //                sendMessage(fingerCentroidStr);
-                    Log.i(TAG, "Sent centroids = " + centroidStrings);
+                    Log.i(TAG, "Sent centroids = " + centroidStringsNew);
                 }
 
                 blackCentroidsX = new ArrayList<Integer>();
@@ -579,7 +581,21 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                             }
                             if(ffState == 2) {
                                 ffState = 0;
-                                fastForward(pulsedPolygon, fastForwardText);
+                                if(isBluetooth) {
+                                    String centroidStringsNew = "";
+                                    for (Point centroid : centroids) {
+                                        centroidStringsNew += centroid.toString();
+                                        centroidStringsNew += "+";
+                                    }
+                                    centroidStringsNew += "pulseState:"+pulseState+"+";
+                                    centroidStringsNew += "ppState:"+ppState+"+";
+                                    centroidStringsNew += "ffState:2+";
+                                    centroidStringsNew += "\n";
+                                    sendMessage(centroidStringsNew);
+                                    Log.i(TAG, "Sent centroids = " + centroidStringsNew);
+                                } else {
+                                    fastForward(pulsedPolygon, fastForwardText);
+                                }
                             }
                             Log.i("Fast_Forward","ffState: " + ffState);
                             // state machine for pulse
@@ -606,16 +622,30 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                                 }
                             }
                             // arbit entry. adjust somewhere
-                            if(ppState != 1 && pulseState == 0) {
+                            if(ppState != 1 && pulseState == 0) {   // pause
                                 Log.i("Play_Pause", "Pausing pulsedPolygon = " + pulsedPolygon + " with currSpeak = " + currSpeak +" " +
                                         "and currSpeakAudio = " + currSpeakAudio);
-                                if(mUtility.isSpeaking()) {
-                                    Log.i("Play_Pause", "Pausing MediaPlayer");
-                                    pauseAudio(pulsedPolygon);
-                                }
-                                if(tts.isSpeaking()) {
-                                    Log.i("Play_Pause", "Pausing TTS");
-                                    pauseTTS(pulsedPolygon, currSpeak);
+                                if(isBluetooth) {
+                                    String centroidStringsNew = "";
+                                    for (Point centroid : centroids) {
+                                        centroidStringsNew += centroid.toString();
+                                        centroidStringsNew += "+";
+                                    }
+                                    centroidStringsNew += "pulseState:"+pulseState+"+";
+                                    centroidStringsNew += "ppState:"+ppState+"+";
+                                    centroidStringsNew += "ffState:"+ffState+"+";
+                                    centroidStringsNew += "\n";
+                                    sendMessage(centroidStringsNew);
+                                    Log.i(TAG, "Sent centroids = " + centroidStringsNew);
+                                } else {
+                                    if (mUtility.isSpeaking()) {
+                                        Log.i("Play_Pause", "Pausing MediaPlayer");
+                                        pauseAudio(pulsedPolygon);
+                                    }
+                                    if (tts.isSpeaking()) {
+                                        Log.i("Play_Pause", "Pausing TTS");
+                                        pauseTTS(pulsedPolygon, currSpeak);
+                                    }
                                 }
                             }
                             if (pulseState == 2 && previousState == i) {
@@ -627,11 +657,12 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                                         centroidStringsNew += centroid.toString();
                                         centroidStringsNew += "+";
                                     }
-                                    centroidStringsNew += 2;
+                                    centroidStringsNew += "pulseState:2+";
+                                    centroidStringsNew += "ppState:"+ppState+"+";
+                                    centroidStringsNew += "ffState:"+ffState+"+";
                                     centroidStringsNew += "\n";
                                     sendMessage(centroidStringsNew);
-                                }
-                                if(!isBluetooth) {
+                                } else {
 //                                    final String toDescribe = mUtility.descriptions.get(pulsedPolygon);
                                     final List<String> toDescribeList = mUtility.descriptionStatements.get(pulsedPolygon);
                                     Log.i(TAG, "Starting to Speak. ppState: " + ppState + " toDescribeList.size = " + toDescribeList.size());
@@ -657,8 +688,6 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                                             } else {
                                                 Log.i(TAG, "Speaking from currSpeak = " + currSpeak);
                                                 Log.i(TAG, "toDescribe: " + toDescribe);
-                                                //while (tts.isSpeaking()){}
-                                                //speakOut(toDescribe, getApplicationContext());
                                                 mUtility.changeLastLocation(pulsedPolygon, currSpeak);
                                                 //change
                                                 if (!mUtility.mp.isPlaying()) {

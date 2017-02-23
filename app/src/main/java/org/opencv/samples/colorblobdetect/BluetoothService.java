@@ -262,6 +262,7 @@ public class BluetoothService {
                 } catch (IOException e) {
                     // unable to connect; close the socket and get out
                     Log.e("ConnectThread", "connection exception", e);
+                    Log.e(TAG, "Connection failed in second attempt", connectException);
                     try {
                         Log.i("ConnectThread", "Closing Socket");
                         mmSocket.close();
