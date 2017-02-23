@@ -24,6 +24,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import static org.opencv.samples.colorblobdetect.ColorBlobDetectionActivity.ffState;
+import static org.opencv.samples.colorblobdetect.ColorBlobDetectionActivity.pulsedPolygon;
+
 public class ShowCentroidsActivity extends Activity {
 
     private static final String TAG = "ShowCentroidsActivity";
@@ -45,6 +48,15 @@ public class ShowCentroidsActivity extends Activity {
     private int fingerCentroidY;
     public int pulsedPolygon = -1;
     private int previousState = -1;
+
+    // variables for play pause, fast forward,
+    public static int fastForwardText = 2;
+    public static int fastForwardAudio = 5000; // in milliseconds
+    public static int ppState = -1;
+    public static int ffPrevState = -1;
+    private int currSpeak;
+    private int currSpeakAudio;
+    private boolean inPolygon = false;
 
     final String envpath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS) + "/Tactile Reader";
 
@@ -101,6 +113,7 @@ public class ShowCentroidsActivity extends Activity {
     public void onDestroy() {
         Log.i(TAG, "in onDestroy of ShowCentroidsActivity");
         super.onDestroy();
+        tts.stop();
         if(mBluetoothService != null)
             mBluetoothService.stop();
         tts.stop();
@@ -115,7 +128,7 @@ public class ShowCentroidsActivity extends Activity {
         return size;
     }
 
-    void show(Point[] centroids, int pulseState){
+    void show(Point[] centroids, int pulseState, int ppState, int ffState){
         fingerCentroidX = (int) centroids[1].x;
         fingerCentroidY = (int) centroids[1].y;
 
@@ -145,13 +158,22 @@ public class ShowCentroidsActivity extends Activity {
         Point nP = normalizePoint(new Point(fingerCentroidX, fingerCentroidY));
         Log.i(TAG, "Normalized Finger: " + nP.x + " " + nP.y + " " + mUtility.regionPoints.size());
         if (Utility.isFingerStatic(nP)) {
+            inPolygon = false;
             for (int i = 0; i < mUtility.regionPoints.size(); i++) {                    // for each region
                 Log.i(TAG, "For polygonTest: " + mUtility.titles.get(i) + " " + i);
                 //if (Imgproc.pointPolygonTest(mUtility.statesContours.get(i), nP, false) > 0*/
                 if (mUtility.polygonTest(nP, mUtility.regionPoints.get(i))) {            // if finger is in region i
-                    Log.i(TAG, "TEST1: IN THE IF " + "i = " + i + " ");
+                    inPolygon = true;
                     Log.i(TAG, "polygontestpassed");
                     Log.i(TAG, "PulsedPolygon: " + pulsedPolygon + " " + Utility.titles.get(i) + " " + i);
+                    // state machine for fastforward
+                    ffPrevState = ffState;
+                    Log.i("Fast_Forward","ffPrevState: " + ffPrevState);
+                    if(ffState == 2) {
+                        fastForward(pulsedPolygon, fastForwardText);
+                    }
+                    Log.i("Fast_Forward", "ffState: " + ffState);
+
                     if (pulseState == -1) {
                         pulseState = 0;
                         pulsedPolygon = i;
@@ -170,60 +192,141 @@ public class ShowCentroidsActivity extends Activity {
                         Log.i("PULSE", "toSpeak: " + speakStr);
                         speakOut(speakStr, getApplicationContext());
                     }
-                    if (pulseState == 2 && previousState == i) {
-                        pulseState = 0;
-                        final String toDescribe = mUtility.descriptions.get(pulsedPolygon);
-                        Log.i("PULSE", "pulse detected... toDescribe: " + toDescribe);
-                        if (toDescribe.startsWith("$AUDIO$")) {
-                            mUtility.playAudio(envpath + File.separator + filename, toDescribe, 0);
-                            Log.wtf("MTP", "parsing: " + envpath + "/" + toDescribe);
-                        } else {
-                            Log.i(TAG, "toDescribe: " + toDescribe);
-                            speakOut(toDescribe, getApplicationContext());
+                    // TODO: check if ever enters this if condition
+                    if(ppState != 1 && pulseState == 0) { // pause
+                        Log.i("Play_Pause", "Pausing pulsedPolygon = " + pulsedPolygon + " with currSpeak = " + currSpeak +" " +
+                                "and currSpeakAudio = " + currSpeakAudio);
+                        if(mUtility.isSpeaking()) {
+                            Log.i("Play_Pause", "Pausing MediaPlayer");
+                            pauseAudio(pulsedPolygon);
+                        }
+                        if(tts.isSpeaking()) {
+                            Log.i("Play_Pause", "Pausing TTS");
+                            // TODO: implement currSpeak
+                            pauseTTS(pulsedPolygon, currSpeak);
                         }
                     }
+                    if(pulseState == 2 && previousState == i) {
+                        pulseState = 0;
+                        final List<String> toDescribeList = mUtility.descriptionStatements.get(pulsedPolygon);
+                        Log.i(TAG, "Starting to Speak. ppState: " + ppState + " toDescribeList.size = " + toDescribeList.size());
+                        currSpeak = mUtility.lastLocation.get(pulsedPolygon);
+                        currSpeakAudio = mUtility.lastLocationAudio.get(pulsedPolygon);
+                        Log.i("PLAY_PAUSE", "Speaking with pulsedPolygon = " + pulsedPolygon + " currSpeak = " + currSpeak);
+                        if(currSpeak >= toDescribeList.size()-1) {
+                            currSpeak = 0;
+                        }
+                        if(ppState != 1) {
+                            if(tts.isSpeaking())
+                                pauseTTS(pulsedPolygon, currSpeak);
+                            if(mUtility.isSpeaking())
+                                pauseAudio(pulsedPolygon);
+                        }
+                        for(currSpeak = mUtility.lastLocation.get(pulsedPolygon); currSpeak < toDescribeList.size(); currSpeak++) {
+                            if(ppState == 1) {
+                                String toDescribe = toDescribeList.get(currSpeak);
+                                if(toDescribe.startsWith("$AUDIO$")) {
+                                    Log.i(TAG, "Speaking from currSpeakAudio = " + currSpeakAudio);
+                                    mUtility.playAudio(envpath + File.separator + filename, toDescribe, currSpeakAudio);
+                                    Log.wtf("MTP", "parsing: " + envpath + "/" + toDescribe);
+                                } else {
+                                    Log.i(TAG, "Speaking from currSpeak = " + currSpeak);
+                                    Log.i(TAG, "toDescribe: " + toDescribe);
+                                    mUtility.changeLastLocation(pulsedPolygon, currSpeak);
+                                    if(!mUtility.mp.isPlaying()) {
+                                        final String speakStr = toDescribe;
+                                        tts.speak(speakStr, TextToSpeech.QUEUE_ADD, null, ""+currSpeak);
+                                    }
+                                }
+                            }
+                        }
+                        Log.i(TAG, "Speech Over. currSpeak = " + currSpeak);
+                        if(currSpeak >= toDescribeList.size() - 1) {
+                            currSpeak = 0;
+                            mUtility.changeLastLocation(pulsedPolygon, currSpeak);
+                        }
+                    }
+//                    if (pulseState == 2 && previousState == i) {
+//                        pulseState = 0;
+//                        final String toDescribe = mUtility.descriptions.get(pulsedPolygon);
+//                        Log.i("PULSE", "pulse detected... toDescribe: " + toDescribe);
+//                        if (toDescribe.startsWith("$AUDIO$")) {
+//                            mUtility.playAudio(envpath + File.separator + filename, toDescribe, 0);
+//                            Log.wtf("MTP", "parsing: " + envpath + "/" + toDescribe);
+//                        } else {
+//                            Log.i(TAG, "toDescribe: " + toDescribe);
+//                            speakOut(toDescribe, getApplicationContext());
+//                        }
+//                    }
                     break;
                 }
             }
+            if(!inPolygon) {
+                Log.i("Play_Pause", "Outside any polygon. Speech paused. pulseState = " + pulseState);
+                if(tts.isSpeaking())
+                    tts.stop();
+                if(mUtility.isSpeaking()) {
+                    mUtility.stopAudio();
+                }
+            }
         }
+    }
 
+    private void pauseTTS(int pulsedPolygon, int currSpeak) {
+        Log.i("Play_Pause", "Pausing pulsedPolygon = " + pulsedPolygon + " with currSpeak = " + currSpeak);
+        tts.stop();
+        if(pulsedPolygon != -1)
+            mUtility.changeLastLocation(pulsedPolygon, currSpeak);
+    }
+    private void pauseAudio(int pulsedPolygon) {
+        Log.i("Play_Pause", "Pausing Audio. PulsedPolygon = " + pulsedPolygon);
+        mUtility.pauseAudio(pulsedPolygon);
+    }
+
+    private void fastForward(int pulsedPolygon, int numStatements) {
+        List<String> toDescribeList = mUtility.descriptionStatements.get(pulsedPolygon);
+        int size = toDescribeList.size();
+        if(tts.isSpeaking()) {
+            Log.i("Fast Forwarding", "From " + currSpeak);
+            if(currSpeak + numStatements <= size-1) {
+                currSpeak = currSpeak + numStatements;
+            }
+            else {
+                currSpeak = size;
+            }
+            Log.i("Fast Forwarding", "To " + currSpeak);
+            tts.stop();
+            for(; currSpeak < toDescribeList.size(); currSpeak++) {
+                if(ppState == 1) {
+                    Log.i(TAG, "Speaking from currSpeak = " + currSpeak);
+                    String toDescribe = toDescribeList.get(currSpeak);
+                    if (toDescribe.startsWith("$AUDIO$")) {
+                        //envpath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS) + File.separator + "Tactile Reader";
+                        mUtility.playAudio(envpath + File.separator + filename, toDescribe, currSpeakAudio);
+                        Log.wtf("MTP", "parsing: " + envpath + "/" + toDescribe);
+                    } else {
+                        Log.i(TAG, "toDescribe: " + toDescribe);
+                        //while (tts.isSpeaking()){}
+                        //speakOut(toDescribe, getApplicationContext());
+                        mUtility.changeLastLocation(pulsedPolygon, currSpeak);
+                        //change
+                        if (!mUtility.mp.isPlaying()) {
+                            final String speakStr = toDescribe;
+                            tts.speak(speakStr, TextToSpeech.QUEUE_ADD, null, ""+currSpeak);
+                            //tts.speak(speakStr, TextToSpeech.QUEUE_ADD, null);
+                        }
+                        //change
+                    }
+                }
+            }
+        }
+        if(mUtility.isSpeaking()) {
+            mUtility.fastForwardAudio(fastForwardAudio);
+        }
 
     }
 
-    public static Point[] centroids(String str){
-        String[] strPoints = str.split("\\+");
-//        List<Point> listPoints = new ArrayList<Point>();
-        Point[] points = new Point[3];
-        for(int i = 0; i < 3; ++i){
-            String strPoint = strPoints[i];
-//            if(strPoint.charAt(0)!='{')
-//                break;
-            String coordinates = strPoint.substring(1, strPoint.length()-1);
-            String[] coordArray = coordinates.split(",");
-            double x = Double.parseDouble(coordArray[0].trim());
-            double y = Double.parseDouble(coordArray[1].trim());
-            Point point = new Point(x,y);
-//            listPoints.add(point);
-            points[i] = point;
-        }
-        return points;
-//        return (Point[])listPoints.toArray();
-    }
 
-    public static int getPulseState(String str) {
-        String[] points = str.split("\\+");
-        int len = points.length;
-        if(len < 4)
-            return -2;
-        String pulse = points[3];
-        if(pulse.contains("{")) {
-            int id = pulse.indexOf("{");
-            pulse = pulse.substring(0,id);
-        }
-        String[] splits = pulse.split("\n");
-        pulse = splits[0];
-        return Integer.valueOf(pulse);
-    }
 
     // can move to utility?
     private Point normalizePoint(Point P) {
@@ -312,6 +415,61 @@ public class ShowCentroidsActivity extends Activity {
         }
     }
 
+    public static Point[] centroids(String str){
+        String[] strPoints = str.split("\\+");
+//        List<Point> listPoints = new ArrayList<Point>();
+        Point[] points = new Point[3];
+        for(int i = 0; i < 3; ++i){
+            String strPoint = strPoints[i];
+//            if(strPoint.charAt(0)!='{')
+//                break;
+            String coordinates = strPoint.substring(1, strPoint.length()-1);
+            String[] coordArray = coordinates.split(",");
+            double x = Double.parseDouble(coordArray[0].trim());
+            double y = Double.parseDouble(coordArray[1].trim());
+            Point point = new Point(x,y);
+//            listPoints.add(point);
+            points[i] = point;
+        }
+        return points;
+//        return (Point[])listPoints.toArray();
+    }
+
+    public static int getPulseState(String str) {
+        String[] points = str.split("\\+");
+        int len = points.length;
+        if(len < 6)
+            return -2;
+        String pulse = points[3];
+        int id = pulse.indexOf(":");
+        pulse = pulse.substring(id+1);
+        return Integer.valueOf(pulse);
+    }
+
+    public static int getPPState(String str) {
+        String[] points = str.split("\\+");
+        int len = points.length;
+        if(len < 6)
+            return -2;
+        String pulse = points[4];
+        int id = pulse.indexOf(":");
+        pulse = pulse.substring(id+1);
+        return Integer.valueOf(pulse);
+    }
+
+    public static int getFFState(String str) {
+        String[] points = str.split("\\+");
+        int len = points.length;
+        if(len < 6)
+            return -2;
+        String pulse = points[5];
+        int id = pulse.indexOf(":");
+        pulse = pulse.substring(id+1);
+        String[] splits = pulse.split("\n");
+        pulse = splits[0];
+        return Integer.valueOf(pulse);
+    }
+
     //     the Handler that gets information back from the BluetoothService
     public Handler mHandler = new Handler() {
         @Override
@@ -327,8 +485,10 @@ public class ShowCentroidsActivity extends Activity {
                     Log.i("Bluetooth activity", readMessage);
                     Point[] points = centroids(readMessage);
                     int pulseState = getPulseState(readMessage);
+                    int ppState = getPPState(readMessage);
+                    int ffState = getFFState(readMessage);
                     if(pulseState!=-2)
-                        show(points, pulseState);
+                        show(points, pulseState, ppState, ffState);
                     break;
                 case Constants.MESSAGE_DEVICE_NAME:
                     // save the connected device's name

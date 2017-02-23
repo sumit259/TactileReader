@@ -74,10 +74,10 @@ public class Utility {
         Corners = new Point[4];
         titles = new ArrayList<String>();
         descriptions = new ArrayList<String>();
+        regionPoints = new ArrayList<List<Point>>();
         descriptionStatements = new ArrayList<List<String>>();
         lastLocation = new ArrayList<Integer>();
         lastLocationAudio = new ArrayList<Integer>();
-        regionPoints = new ArrayList<List<Point>>();
         mp = new MediaPlayer();
     }
 

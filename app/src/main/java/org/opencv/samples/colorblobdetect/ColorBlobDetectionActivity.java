@@ -111,7 +111,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
     public static int fingerApprovalCount = 0;
 
     public static int fastForwardText = 2;
-    public static int fastForwardAudio = 5000;
+    public static int fastForwardAudio = 5000;  // in milliseconds
 
     //play/pause variables
     public static int ppState = -1;
@@ -472,224 +472,253 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
             mDetector.process(mRgba);
             List<MatOfPoint> contours = mDetector.getContours();
             Imgproc.drawContours(mRgba, contours, -1, CONTOUR_COLOR);
-//            // play/pause
-//            List<MatOfPoint> ppContours = new ArrayList<>();
-//            List<MatOfPoint> ffContours = new ArrayList<>();
-//            if(ppIsColorSelected) {
-//                ppDetector.process(mRgba);
-//                ppContours = ppDetector.getContours();
-//                Imgproc.drawContours(mRgba, ppContours, -1, CONTOUR_COLOR_PP);
-//            }
-//            if(ffIsColorSelected) {
-//                ffDetector.process(mRgba);
-//                ffContours = ffDetector.getContours();
-//                Imgproc.drawContours(mRgba, ffContours, -1, CONTOUR_COLOR_FF);
-//            }
-//
+            // play/pause
+            List<MatOfPoint> ppContours = new ArrayList<>();
+            List<MatOfPoint> ffContours = new ArrayList<>();
+            if(ppIsColorSelected) {
+                ppDetector.process(mRgba);
+                ppContours = ppDetector.getContours();
+                Imgproc.drawContours(mRgba, ppContours, -1, CONTOUR_COLOR_PP);
+            }
+            if(ffIsColorSelected) {
+                ffDetector.process(mRgba);
+                ffContours = ffDetector.getContours();
+                Imgproc.drawContours(mRgba, ffContours, -1, CONTOUR_COLOR_FF);
+            }
+
             changeCalibrationState(contours, getApplicationContext());
-//            if (contours.size() == 2 && calibrated && (pulseState == 0)) {
-//                pulseDuration++;
-//                Log.i("PULSE", "PulseDuration: " + pulseDuration);
-//                if (pulseDuration > pulseDurationLimit) {
-//                    pulseState = 1;
-//                    pulseDuration = 0;
-//                }
-//            }
-//            // change play/pause state
-////            ppState = 1;
-//            if(ppContours.size() > 0) {
-//                ppState = 1;
-//            } else {
-//                ppState = 0;
-//            }
-//
-//            Log.i("PULSE", "PulseState: " + pulseState);
-//            Log.i("PULSE", "ContourSize: " + contours.size());
-//            Log.i("PLAY_PAUSE", "State: " + ppState);
-//            Log.i("PLAY_PAUSE", "ContourSize: " + ppContours.size());
-//
-//            if(isBluetooth) Log.i(TAG, "Checking if bluetooth active. State = " + (mBluetoothService.getState() == 3));
-//            Log.i(TAG, "Checking contours size = " + contours.size());
-//            Log.i(TAG, "Checking calibration = " + calibrated);
-//            Log.i(TAG, "Checking TTS = " + !tts.isSpeaking());
-//            Log.i(TAG, "Checking mUtility = " + !mUtility.mp.isPlaying());
-//            // Logic to call state name
-//            if (contours.size() == 3 && calibrated){// && !mUtility.mp.isPlaying()){// && !tts.isSpeaking()) {// && mBluetoothService.getState() == 3) {
-//                pulseDuration = 0;
-//                Point[] centroids;
-//                if (mUtility.getOrientation() % 2 == 0) {
-//                    centroids = mUtility.getCentroid(contours, mUtility.compX);
-//                } else {
-//                    centroids = mUtility.getCentroid(contours, mUtility.compY);
-//                }
-//                fingerCentroidX = (int) centroids[1].x;
-//                fingerCentroidY = (int) centroids[1].y;
-//
-//                if(isBluetooth) {
-//                    // sending via bluetooth
-//                    String centroidStrings = "";
-//                    for (Point centroid : centroids) {
-//                        centroidStrings += centroid.toString();
-//                        centroidStrings += "+";
-//                    }
-//                    centroidStrings += pulseState;
-//                    centroidStrings += "\n";
-//                    sendMessage(centroidStrings);
-//                    //                String fingerCentroidStr = fingerCentroidX + "," + fingerCentroidY;
-//                    //                sendMessage(fingerCentroidStr);
-//                    Log.i(TAG, "Sent centroids = " + centroidStrings);
-//                }
-//
-//                blackCentroidsX = new ArrayList<Integer>();
-//                blackCentroidsY = new ArrayList<Integer>();
-//                blackCentroidsX.add((int) centroids[0].x);
-//                blackCentroidsX.add((int) centroids[2].x);
-//                blackCentroidsY.add((int) centroids[0].y);
-//                blackCentroidsY.add((int) centroids[2].y);
-//
-//                Log.i("CENTROIDS", "Finger: " + fingerCentroidX + " " + fingerCentroidY);
-//                Log.i("CENTROIDS", "Blob1: " + blackCentroidsX.get(0) + " " + blackCentroidsY.get(0));
-//                Log.i("CENTROIDS", "Blob2: " + blackCentroidsX.get(1) + " " + blackCentroidsY.get(1));
-//                android.graphics.Point pt = getScreenDimensions();
-//                Log.i("CENTROIDS", "Size: " + pt.x + " " + pt.y);
-//
+            if (contours.size() == 2 && calibrated && (pulseState == 0)) {
+                pulseDuration++;
+                Log.i("PULSE", "PulseDuration: " + pulseDuration);
+                if (pulseDuration > pulseDurationLimit) {
+                    pulseState = 1;
+                    pulseDuration = 0;
+                }
+            }
+            // change play/pause state
+//            ppState = 1;
+            if(ppContours.size() > 0) {
+                ppState = 1;
+            } else {
+                ppState = 0;
+            }
+
+            Log.i("PULSE", "PulseState: " + pulseState);
+            Log.i("PULSE", "ContourSize: " + contours.size());
+            Log.i("PLAY_PAUSE", "State: " + ppState);
+            Log.i("PLAY_PAUSE", "ContourSize: " + ppContours.size());
+
+            if(isBluetooth) Log.i(TAG, "Checking if bluetooth active. State = " + (mBluetoothService.getState() == 3));
+            Log.i(TAG, "Checking contours size = " + contours.size());
+            Log.i(TAG, "Checking calibration = " + calibrated);
+            Log.i(TAG, "Checking TTS = " + !tts.isSpeaking());
+            Log.i(TAG, "Checking mUtility = " + !mUtility.mp.isPlaying());
+            // Logic to call state name
+            if (contours.size() == 3 && calibrated){// && !mUtility.mp.isPlaying()){// && !tts.isSpeaking()) {// && mBluetoothService.getState() == 3) {
+                pulseDuration = 0;
+                Point[] centroids;
+                if (mUtility.getOrientation() % 2 == 0) {
+                    centroids = mUtility.getCentroid(contours, mUtility.compX);
+                } else {
+                    centroids = mUtility.getCentroid(contours, mUtility.compY);
+                }
+                fingerCentroidX = (int) centroids[1].x;
+                fingerCentroidY = (int) centroids[1].y;
+
+                if(isBluetooth) {
+                    // sending via bluetooth
+                    String centroidStringsNew = "";
+                    for (Point centroid : centroids) {
+                        centroidStringsNew += centroid.toString();
+                        centroidStringsNew += "+";
+                    }
+                    centroidStringsNew += "pulseState:"+pulseState+"+";
+                    centroidStringsNew += "ppState:"+ppState+"+";
+                    centroidStringsNew += "ffState:"+ffState+"+";
+                    centroidStringsNew += "\n";
+                    sendMessage(centroidStringsNew);
+                    //                String fingerCentroidStr = fingerCentroidX + "," + fingerCentroidY;
+                    //                sendMessage(fingerCentroidStr);
+                    Log.i(TAG, "Sent centroids = " + centroidStringsNew);
+                }
+
+                blackCentroidsX = new ArrayList<Integer>();
+                blackCentroidsY = new ArrayList<Integer>();
+                blackCentroidsX.add((int) centroids[0].x);
+                blackCentroidsX.add((int) centroids[2].x);
+                blackCentroidsY.add((int) centroids[0].y);
+                blackCentroidsY.add((int) centroids[2].y);
+
+                Log.i("CENTROIDS", "Finger: " + fingerCentroidX + " " + fingerCentroidY);
+                Log.i("CENTROIDS", "Blob1: " + blackCentroidsX.get(0) + " " + blackCentroidsY.get(0));
+                Log.i("CENTROIDS", "Blob2: " + blackCentroidsX.get(1) + " " + blackCentroidsY.get(1));
+                android.graphics.Point pt = getScreenDimensions();
+                Log.i("CENTROIDS", "Size: " + pt.x + " " + pt.y);
+
                 Point nP = normalizePoint(new Point(fingerCentroidX, fingerCentroidY));
-//                Log.i(TAG, "Normalized Finger: " + nP.x + " " + nP.y + " " + mUtility.regionPoints.size());
-//                if (Utility.isFingerStatic(nP)) {
-//                    inPolygon = false;
-//                    for (int i = 0; i < mUtility.regionPoints.size(); i++) {                    // for each region
-//                        Log.i(TAG, "For polygonTest: " + mUtility.titles.get(i) + " " + i);
-//                        //if (Imgproc.pointPolygonTest(mUtility.statesContours.get(i), nP, false) > 0*/
-//                        if (mUtility.polygonTest(nP, mUtility.regionPoints.get(i))) {            // if finger is in region i
-//                            inPolygon = true;
-//                            Log.i(TAG, "polygontestpassed");
-//                            Log.i(TAG, "PulsedPolygon: " + pulsedPolygon + " " + Utility.titles.get(i) + " " + i);
-//                            // state machine for fastforward
-//                            ffPrevState = ffState;
-//                            Log.i("Fast_Forward","ffPrevState: " + ffPrevState);
-//                            Log.i("Fast_forward", "ffContourSize: " + ffContours.size());
-//                            if(ffContours.size() == 0) {
-//                                ffState = 1;
-//                            }
-//                            else {
-//                                if(ffPrevState == 1)
-//                                    ffState = 2;
-//                                else
-//                                    ffState = 0;
-//                            }
-//                            if(ffState == 2) {
-//                                ffState = 0;
-//                                fastForward(pulsedPolygon, fastForwardText);
-//                            }
-//                            Log.i("Fast_Forward","ffState: " + ffState);
-//                            // state machine for pulse
-//                            if (pulseState == -1) {
-//                                pulseState = 0;
-//                                pulsedPolygon = i;
-//                            } else if (pulseState == 1 && pulsedPolygon == i) {
-//                                pulseState = 2;
-//                            } else if (pulseState == 1 && pulsedPolygon != i) {
-//                                pulsedPolygon = i;
-//                                pulseState = 0;
-//                            } else if (pulseState == 0) {
-//                                pulsedPolygon = i;
-//                            }
-//
-//                            if ((previousState != i) && pulseState != 2) {
-//                                previousState = i;
-//                                Log.i(TAG, "isBluetooth = " + isBluetooth);
-//                                if(!isBluetooth) {
-//                                    String speakStr = mUtility.titles.get(i);
-//                                    Log.i("PULSE", "toSpeak: " + speakStr);
-//                                    //speakOut(speakStr, getApplicationContext());
-//                                    tts.speak(speakStr, TextToSpeech.QUEUE_FLUSH, null, ""+-1);
-//                                }
-//                            }
-//                            // arbit entry. adjust somewhere
-//                            if(ppState != 1 && pulseState == 0) {
-//                                Log.i("Play_Pause", "Pausing pulsedPolygon = " + pulsedPolygon + " with currSpeak = " + currSpeak +" " +
-//                                        "and currSpeakAudio = " + currSpeakAudio);
-//                                if(mUtility.isSpeaking()) {
-//                                    Log.i("Play_Pause", "Pausing MediaPlayer");
-//                                    pauseAudio(pulsedPolygon);
-//                                }
-//                                if(tts.isSpeaking()) {
-//                                    Log.i("Play_Pause", "Pausing TTS");
-//                                    pauseTTS(pulsedPolygon, currSpeak);
-//                                }
-//                            }
-//                            if (pulseState == 2 && previousState == i) {
-//                                Log.i(TAG, "PulseState: " + pulseState);
-//                                pulseState = 0;
-//                                if(isBluetooth) {
-//                                    String centroidStringsNew = "";
-//                                    for (Point centroid : centroids) {
-//                                        centroidStringsNew += centroid.toString();
-//                                        centroidStringsNew += "+";
-//                                    }
-//                                    centroidStringsNew += 2;
-//                                    centroidStringsNew += "\n";
-//                                    sendMessage(centroidStringsNew);
-//                                }
-//                                if(!isBluetooth) {
-////                                    final String toDescribe = mUtility.descriptions.get(pulsedPolygon);
-//                                    final List<String> toDescribeList = mUtility.descriptionStatements.get(pulsedPolygon);
-//                                    Log.i(TAG, "Starting to Speak. ppState: " + ppState + " toDescribeList.size = " + toDescribeList.size());
-//                                    currSpeak = mUtility.lastLocation.get(pulsedPolygon);
-//                                    currSpeakAudio = mUtility.lastLocationAudio.get(pulsedPolygon);
-//                                    Log.i("PLAY_PAUSE", "Speaking with pulsedPolygon = " + pulsedPolygon + " currSpeak = " + currSpeak);
-//                                    //TextToSpeech tts = new TextToSpeech(this, this);
-//                                    if(currSpeak >= toDescribeList.size()-1)
-//                                        currSpeak = 0;
-//                                    if(ppState != 1) {
-//                                        if(tts.isSpeaking())
-//                                            pauseTTS(pulsedPolygon, currSpeak);
-//                                        if(mUtility.isSpeaking())
-//                                            pauseAudio(pulsedPolygon);
-//                                    }
-//                                    for(currSpeak = mUtility.lastLocation.get(pulsedPolygon); currSpeak < toDescribeList.size(); currSpeak++) {
-//                                        if(ppState == 1) {
-//                                            String toDescribe = toDescribeList.get(currSpeak);
-//                                            if (toDescribe.startsWith("$AUDIO$")) {
-//                                                Log.i(TAG, "Speaking from currSpeakAudio = " + currSpeakAudio);
-//                                                mUtility.playAudio(envpath + File.separator + filename, toDescribe, currSpeakAudio);
-//                                                Log.wtf("MTP", "parsing: " + envpath + "/" + toDescribe);
-//                                            } else {
-//                                                Log.i(TAG, "Speaking from currSpeak = " + currSpeak);
-//                                                Log.i(TAG, "toDescribe: " + toDescribe);
-//                                                //while (tts.isSpeaking()){}
-//                                                //speakOut(toDescribe, getApplicationContext());
-//                                                mUtility.changeLastLocation(pulsedPolygon, currSpeak);
-//                                                //change
-//                                                if (!mUtility.mp.isPlaying()) {
-//                                                    final String speakStr = toDescribe;
-//                                                    tts.speak(speakStr, TextToSpeech.QUEUE_ADD, null, ""+currSpeak);
-//                                                    //tts.speak(speakStr, TextToSpeech.QUEUE_ADD, null);
-//                                                }
-//                                                //change
-//                                            }
-//                                        }
-//                                    }
-//                                    Log.i(TAG, "speech over. currSpeak = " + currSpeak);
-//                                    if (currSpeak >= toDescribeList.size() - 1) {
-//                                        currSpeak = 0;
-//                                        mUtility.changeLastLocation(pulsedPolygon, currSpeak);
-//                                    }
-//                                }
-//                            }
-//                            break;
-//                        }
-//                    }
-//                    if(!inPolygon) {
-//                        Log.i("Play_Pause", "Outside any polygon. Speech paused. pulseState = " + pulseState);
-//                        if(tts.isSpeaking())
-//                            tts.stop();
-//                        if(mUtility.isSpeaking()) {
-//                            mUtility.stopAudio();
-//                        }
-//                    }
-//                }
-//            }
+                Log.i(TAG, "Normalized Finger: " + nP.x + " " + nP.y + " " + mUtility.regionPoints.size());
+                if (Utility.isFingerStatic(nP)) {
+                    inPolygon = false;
+                    for (int i = 0; i < mUtility.regionPoints.size(); i++) {                    // for each region
+                        Log.i(TAG, "For polygonTest: " + mUtility.titles.get(i) + " " + i);
+                        //if (Imgproc.pointPolygonTest(mUtility.statesContours.get(i), nP, false) > 0*/
+                        if (mUtility.polygonTest(nP, mUtility.regionPoints.get(i))) {            // if finger is in region i
+                            inPolygon = true;
+                            Log.i(TAG, "polygontestpassed");
+                            Log.i(TAG, "PulsedPolygon: " + pulsedPolygon + " " + Utility.titles.get(i) + " " + i);
+                            // state machine for fastforward
+                            ffPrevState = ffState;
+                            Log.i("Fast_Forward","ffPrevState: " + ffPrevState);
+                            Log.i("Fast_forward", "ffContourSize: " + ffContours.size());
+                            if(ffContours.size() == 0) {
+                                ffState = 1;
+                            }
+                            else {
+                                if(ffPrevState == 1)
+                                    ffState = 2;
+                                else
+                                    ffState = 0;
+                            }
+                            if(ffState == 2) {
+                                ffState = 0;
+                                if(isBluetooth) {
+                                    String centroidStringsNew = "";
+                                    for (Point centroid : centroids) {
+                                        centroidStringsNew += centroid.toString();
+                                        centroidStringsNew += "+";
+                                    }
+                                    centroidStringsNew += "pulseState:"+pulseState+"+";
+                                    centroidStringsNew += "ppState:"+ppState+"+";
+                                    centroidStringsNew += "ffState:2+";
+                                    centroidStringsNew += "\n";
+                                    sendMessage(centroidStringsNew);
+                                    Log.i(TAG, "Sent centroids = " + centroidStringsNew);
+                                } else {
+                                    fastForward(pulsedPolygon, fastForwardText);
+                                }
+                            }
+                            Log.i("Fast_Forward","ffState: " + ffState);
+                            // state machine for pulse
+                            if (pulseState == -1) {
+                                pulseState = 0;
+                                pulsedPolygon = i;
+                            } else if (pulseState == 1 && pulsedPolygon == i) {
+                                pulseState = 2;
+                            } else if (pulseState == 1 && pulsedPolygon != i) {
+                                pulsedPolygon = i;
+                                pulseState = 0;
+                            } else if (pulseState == 0) {
+                                pulsedPolygon = i;
+                            }
+
+                            if ((previousState != i) && pulseState != 2) {
+                                previousState = i;
+                                Log.i(TAG, "isBluetooth = " + isBluetooth);
+                                if(!isBluetooth) {
+                                    String speakStr = mUtility.titles.get(i);
+                                    Log.i("PULSE", "toSpeak: " + speakStr);
+                                    //speakOut(speakStr, getApplicationContext());
+                                    tts.speak(speakStr, TextToSpeech.QUEUE_FLUSH, null, ""+-1);
+                                }
+                            }
+                            // arbit entry. adjust somewhere
+                            if(ppState != 1 && pulseState == 0) {   // pause
+                                Log.i("Play_Pause", "Pausing pulsedPolygon = " + pulsedPolygon + " with currSpeak = " + currSpeak +" " +
+                                        "and currSpeakAudio = " + currSpeakAudio);
+                                if(isBluetooth) {
+                                    String centroidStringsNew = "";
+                                    for (Point centroid : centroids) {
+                                        centroidStringsNew += centroid.toString();
+                                        centroidStringsNew += "+";
+                                    }
+                                    centroidStringsNew += "pulseState:"+pulseState+"+";
+                                    centroidStringsNew += "ppState:"+ppState+"+";
+                                    centroidStringsNew += "ffState:"+ffState+"+";
+                                    centroidStringsNew += "\n";
+                                    sendMessage(centroidStringsNew);
+                                    Log.i(TAG, "Sent centroids = " + centroidStringsNew);
+                                } else {
+                                    if (mUtility.isSpeaking()) {
+                                        Log.i("Play_Pause", "Pausing MediaPlayer");
+                                        pauseAudio(pulsedPolygon);
+                                    }
+                                    if (tts.isSpeaking()) {
+                                        Log.i("Play_Pause", "Pausing TTS");
+                                        pauseTTS(pulsedPolygon, currSpeak);
+                                    }
+                                }
+                            }
+                            if (pulseState == 2 && previousState == i) {
+                                Log.i(TAG, "PulseState: " + pulseState);
+                                pulseState = 0;
+                                if(isBluetooth) {
+                                    String centroidStringsNew = "";
+                                    for (Point centroid : centroids) {
+                                        centroidStringsNew += centroid.toString();
+                                        centroidStringsNew += "+";
+                                    }
+                                    centroidStringsNew += "pulseState:2+";
+                                    centroidStringsNew += "ppState:"+ppState+"+";
+                                    centroidStringsNew += "ffState:"+ffState+"+";
+                                    centroidStringsNew += "\n";
+                                    sendMessage(centroidStringsNew);
+                                } else {
+//                                    final String toDescribe = mUtility.descriptions.get(pulsedPolygon);
+                                    final List<String> toDescribeList = mUtility.descriptionStatements.get(pulsedPolygon);
+                                    Log.i(TAG, "Starting to Speak. ppState: " + ppState + " toDescribeList.size = " + toDescribeList.size());
+                                    currSpeak = mUtility.lastLocation.get(pulsedPolygon);
+                                    currSpeakAudio = mUtility.lastLocationAudio.get(pulsedPolygon);
+                                    Log.i("PLAY_PAUSE", "Speaking with pulsedPolygon = " + pulsedPolygon + " currSpeak = " + currSpeak);
+                                    //TextToSpeech tts = new TextToSpeech(this, this);
+                                    if(currSpeak >= toDescribeList.size()-1)
+                                        currSpeak = 0;
+                                    if(ppState != 1) {
+                                        if(tts.isSpeaking())
+                                            pauseTTS(pulsedPolygon, currSpeak);
+                                        if(mUtility.isSpeaking())
+                                            pauseAudio(pulsedPolygon);
+                                    }
+                                    for(currSpeak = mUtility.lastLocation.get(pulsedPolygon); currSpeak < toDescribeList.size(); currSpeak++) {
+                                        if(ppState == 1) {
+                                            String toDescribe = toDescribeList.get(currSpeak);
+                                            if (toDescribe.startsWith("$AUDIO$")) {
+                                                Log.i(TAG, "Speaking from currSpeakAudio = " + currSpeakAudio);
+                                                mUtility.playAudio(envpath + File.separator + filename, toDescribe, currSpeakAudio);
+                                                Log.wtf("MTP", "parsing: " + envpath + "/" + toDescribe);
+                                            } else {
+                                                Log.i(TAG, "Speaking from currSpeak = " + currSpeak);
+                                                Log.i(TAG, "toDescribe: " + toDescribe);
+                                                mUtility.changeLastLocation(pulsedPolygon, currSpeak);
+                                                //change
+                                                if (!mUtility.mp.isPlaying()) {
+                                                    final String speakStr = toDescribe;
+                                                    tts.speak(speakStr, TextToSpeech.QUEUE_ADD, null, ""+currSpeak);
+                                                    //tts.speak(speakStr, TextToSpeech.QUEUE_ADD, null);
+                                                }
+                                                //change
+                                            }
+                                        }
+                                    }
+                                    Log.i(TAG, "speech over. currSpeak = " + currSpeak);
+                                    if (currSpeak >= toDescribeList.size() - 1) {
+                                        currSpeak = 0;
+                                        mUtility.changeLastLocation(pulsedPolygon, currSpeak);
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    }
+                    if(!inPolygon) {
+                        Log.i("Play_Pause", "Outside any polygon. Speech paused. pulseState = " + pulseState);
+                        if(tts.isSpeaking())
+                            tts.stop();
+                        if(mUtility.isSpeaking()) {
+                            mUtility.stopAudio();
+                        }
+                    }
+                }
+            }
             Mat colorLabel = mRgba.submat(4, 68, 4, 68);
             colorLabel.setTo(mBlobColorRgba);
 
