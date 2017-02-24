@@ -84,25 +84,29 @@
             <RadioButton android:id="@+id/radio_up"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
-                android:background="@drawable/up" />
+                android:background="@drawable/up"
+                android:contentDescription="orientation up" />
 
             <RadioButton android:id="@+id/radio_right"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:layout_marginLeft="20dp"
-                android:background="@drawable/right"/>
+                android:background="@drawable/right"
+                android:contentDescription="orientation right" />
 
             <RadioButton android:id="@+id/radio_down"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:background="@drawable/down"
-                android:layout_marginLeft="20dp"/>
+                android:layout_marginLeft="20dp"
+                android:contentDescription="orientation down" />
 
             <RadioButton android:id="@+id/radio_left"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:layout_marginLeft="20dp"
-                android:background="@drawable/left"/>
+                android:background="@drawable/left"
+                android:contentDescription="orientation left" />
 
         </RadioGroup>
 
