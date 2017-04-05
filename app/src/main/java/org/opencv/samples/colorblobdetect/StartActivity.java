@@ -80,6 +80,8 @@ public class StartActivity extends Activity {
         if (!f.exists()) {
             f.mkdir();
             Log.wtf("MTP", "MKDIR executed");
+        } else {
+            Log.i(TAG, "f exists");
         }
 
         File files[] = f.listFiles();
@@ -89,6 +91,8 @@ public class StartActivity extends Activity {
                 filenames.add(files[i].getName());
                 Log.d("MTP", "FileName:" + files[i].getName());
             }
+        } else {
+            Log.i(TAG, "File list is null.");
         }
 
         if(filenames==null){

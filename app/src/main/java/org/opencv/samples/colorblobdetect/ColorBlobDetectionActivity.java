@@ -45,7 +45,7 @@ import java.util.List;
 import java.util.Locale;
 
 import static android.os.SystemClock.sleep;
-// bluetooth code taken from http://www.egr.msu.edu/classes/ece480/capstone/spring14/group01/docs/appnote/Wirsing-SendingAndReceivingDataViaBluetoothWithAnAndroidDevice.pdf
+// bluetooth code adapted from http://www.egr.msu.edu/classes/ece480/capstone/spring14/group01/docs/appnote/Wirsing-SendingAndReceivingDataViaBluetoothWithAnAndroidDevice.pdf
 public class ColorBlobDetectionActivity extends Activity implements OnTouchListener, CvCameraViewListener2 {
     private static final String TAG = "OCVSample::Activity";
 
