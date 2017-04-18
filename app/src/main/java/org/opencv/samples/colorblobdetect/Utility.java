@@ -82,9 +82,11 @@ public class Utility {
     }
 
     public void changeLastLocation(int polygon, int location) {
+        Log.i("Utility", "changeLastLocation: polygon = " + polygon + " location = " + location);
         lastLocation.set(polygon, location);
     }
     public static void changeLastLocationAudio(int polygon, int position) {
+        Log.i("Utility", "changeLastLocationAudio: polygon = " + polygon + " location = " + position);
         lastLocationAudio.set(polygon, position);
     }
     private static Point getPoint(String line) {

@@ -621,7 +621,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                                     tts.speak(speakStr, TextToSpeech.QUEUE_FLUSH, null, ""+-1);
                                 }
                             }
-                            // arbit entry. adjust somewhere
+                            // pause
                             if(ppState != 1 && pulseState == 0) {   // pause
                                 Log.i("Play_Pause", "Pausing pulsedPolygon = " + pulsedPolygon + " with currSpeak = " + currSpeak +" " +
                                         "and currSpeakAudio = " + currSpeakAudio);
@@ -673,10 +673,13 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                                     if(currSpeak >= toDescribeList.size()-1)
                                         currSpeak = 0;
                                     if(ppState != 1) {
-                                        if(tts.isSpeaking())
+                                        if(tts.isSpeaking()) {
+                                            Log.i(TAG, "About to pause speech at pulsedPolygon = " + pulsedPolygon + " and currSpeak = " + currSpeak);
                                             pauseTTS(pulsedPolygon, currSpeak);
-                                        if(mUtility.isSpeaking())
+                                        }
+                                        if(mUtility.isSpeaking()) {
                                             pauseAudio(pulsedPolygon);
+                                        }
                                     }
                                     for(currSpeak = mUtility.lastLocation.get(pulsedPolygon); currSpeak < toDescribeList.size(); currSpeak++) {
                                         if(ppState == 1) {

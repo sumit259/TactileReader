@@ -12,6 +12,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
 import android.view.Display;
 import android.widget.TextView;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Locale;
 
 import static org.opencv.samples.colorblobdetect.ColorBlobDetectionActivity.ffState;
+import static org.opencv.samples.colorblobdetect.ColorBlobDetectionActivity.ppState;
 import static org.opencv.samples.colorblobdetect.ColorBlobDetectionActivity.pulsedPolygon;
 
 public class ShowCentroidsActivity extends Activity {
@@ -108,6 +110,29 @@ public class ShowCentroidsActivity extends Activity {
                 }
             }
         });
+        tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+            int speakingId = -1;
+            public int getId() {
+                return speakingId;
+            }
+            @Override
+            public void onStart(String s) {
+                speakingId = Integer.parseInt(s);
+                Log.i("UtteranceProgList", "Starting UtteranceId = " + s);
+                currSpeak = speakingId;
+            }
+
+            @Override
+            public void onDone(String s) {
+                Log.i("UtteranceProgList", "Done UtteranceId = " + s);
+            }
+
+            @Override
+            public void onError(String s) {
+
+            }
+        });
+        tts.speak(speakStr, TextToSpeech.QUEUE_FLUSH, null, ""+-1);
     }
 
     public void onDestroy() {
@@ -170,7 +195,9 @@ public class ShowCentroidsActivity extends Activity {
                     ffPrevState = ffState;
                     Log.i("Fast_Forward","ffPrevState: " + ffPrevState);
                     if(ffState == 2) {
-                        fastForward(pulsedPolygon, fastForwardText);
+                        ffState = 0;
+                        Log.i("Fast_Forward","Fast forwarding by " + fastForwardText);
+                        fastForward(pulsedPolygon, fastForwardText, ppState);
                     }
                     Log.i("Fast_Forward", "ffState: " + ffState);
 
@@ -186,13 +213,13 @@ public class ShowCentroidsActivity extends Activity {
                         pulsedPolygon = i;
                     }
 
-                    if ((previousState != i) && pulseState!=2) {
+                    if ((previousState != i) && pulseState != 2) {
                         previousState = i;
                         String speakStr = mUtility.titles.get(i);
                         Log.i("PULSE", "toSpeak: " + speakStr);
-                        speakOut(speakStr, getApplicationContext());
+//                        speakOut(speakStr, getApplicationContext());
+                        tts.speak(speakStr, TextToSpeech.QUEUE_FLUSH, null, "" + -1);
                     }
-                    // TODO: check if ever enters this if condition
                     if(ppState != 1 && pulseState == 0) { // pause
                         Log.i("Play_Pause", "Pausing pulsedPolygon = " + pulsedPolygon + " with currSpeak = " + currSpeak +" " +
                                 "and currSpeakAudio = " + currSpeakAudio);
@@ -201,8 +228,7 @@ public class ShowCentroidsActivity extends Activity {
                             pauseAudio(pulsedPolygon);
                         }
                         if(tts.isSpeaking()) {
-                            Log.i("Play_Pause", "Pausing TTS");
-                            // TODO: implement currSpeak
+                            Log.i("Play_Pause", "Pausing TTS with currSpeak = " + currSpeak);
                             pauseTTS(pulsedPolygon, currSpeak);
                         }
                     }
@@ -214,9 +240,11 @@ public class ShowCentroidsActivity extends Activity {
                         currSpeakAudio = mUtility.lastLocationAudio.get(pulsedPolygon);
                         Log.i("PLAY_PAUSE", "Speaking with pulsedPolygon = " + pulsedPolygon + " currSpeak = " + currSpeak);
                         if(currSpeak >= toDescribeList.size()-1) {
+                            Log.i("Play_Pause", "Resetting currSpeak to 0 from " + currSpeak);
                             currSpeak = 0;
                         }
                         if(ppState != 1) {
+                            Log.i(TAG, "About to pause speech at pulsedPolygon = " + pulsedPolygon + " and currSpeak = " + currSpeak);
                             if(tts.isSpeaking())
                                 pauseTTS(pulsedPolygon, currSpeak);
                             if(mUtility.isSpeaking())
@@ -283,7 +311,7 @@ public class ShowCentroidsActivity extends Activity {
         mUtility.pauseAudio(pulsedPolygon);
     }
 
-    private void fastForward(int pulsedPolygon, int numStatements) {
+    private void fastForward(int pulsedPolygon, int numStatements, int ppState) {
         List<String> toDescribeList = mUtility.descriptionStatements.get(pulsedPolygon);
         int size = toDescribeList.size();
         if(tts.isSpeaking()) {
@@ -296,7 +324,9 @@ public class ShowCentroidsActivity extends Activity {
             }
             Log.i("Fast Forwarding", "To " + currSpeak);
             tts.stop();
+            Log.i("Fast Forwarding", "Entering new for loop with ppState = " + ppState);
             for(; currSpeak < toDescribeList.size(); currSpeak++) {
+                Log.i("Fast Forwarding", "In the new for loop with ppState = " + ppState);
                 if(ppState == 1) {
                     Log.i(TAG, "Speaking from currSpeak = " + currSpeak);
                     String toDescribe = toDescribeList.get(currSpeak);
@@ -319,6 +349,8 @@ public class ShowCentroidsActivity extends Activity {
                     }
                 }
             }
+        } else {
+            Log.i("Fast Forward", "TTS not speaking. Cannot fast forward.");
         }
         if(mUtility.isSpeaking()) {
             mUtility.fastForwardAudio(fastForwardAudio);
@@ -487,8 +519,10 @@ public class ShowCentroidsActivity extends Activity {
                     int pulseState = getPulseState(readMessage);
                     int ppState = getPPState(readMessage);
                     int ffState = getFFState(readMessage);
-                    if(pulseState!=-2)
+                    if(pulseState!=-2) {
+                        Log.i(TAG, "Calling show with pulseState = " + pulseState + ", ppState = " + ppState + ", ffState = " + ffState);
                         show(points, pulseState, ppState, ffState);
+                    }
                     break;
                 case Constants.MESSAGE_DEVICE_NAME:
                     // save the connected device's name
