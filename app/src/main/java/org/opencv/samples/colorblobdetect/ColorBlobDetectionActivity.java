@@ -1055,11 +1055,11 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                 calibrationCount = calibrationCount % calibrationFrameRate;
                 noCalibrationCount = 0;
                 if (prevCalibrationState != calibrated) {
-                    String toSpeak = "Both tags now in view";
-                    // Log.i("CalCheck", "Calibrated");
+                    calibrationCount = 0;
+                    final String toSpeak = "Both tags now in view";
+                    Log.i("CalCheck", "Calibrated");
                     // Add in queue even if tts isSpeaking(), speakOut doesn't add if isSpeaking()
                     speakOut(toSpeak, applicationContext);
-                    calibrationCount = 0;
                 }
             } else {
                 noCalibrationCount++;
