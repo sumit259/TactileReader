@@ -40,6 +40,12 @@ import java.util.Locale;
 import java.util.StringTokenizer;
 import java.util.zip.ZipEntry;
 
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Iterator;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 public class Utility {
     static Context cont;
 
@@ -66,7 +72,6 @@ public class Utility {
 
 //    static String envpath = Environment.getDataDirectory().getPath() + File.separator + "Tactile Reader";
     static String envpath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS) + "/Tactile Reader";
-
 
 
     public Utility(Context currCont) {
@@ -108,6 +113,97 @@ public class Utility {
             |
             | Y
      */
+
+    private static int calculate_match_score(String[] query_parts, String[] title_parts){
+        int num_matches = 0;
+        for(int i = 0; i < query_parts.length; i++){
+            String query_part = query_parts[i];
+            for(int j = 0; j < title_parts.length; j++){
+                String title_part = title_parts[j];
+                if(title_part.equalsIgnoreCase(query_part))
+                    num_matches++;
+            }
+        }
+        return num_matches;
+    }
+
+    private static String getDesc(String context_file, String query) throws Exception {
+
+        String desc = "";
+        final String USER_AGENT = "Mozilla/5.0";
+        final String API_KEY = "AIzaSyCzTM3ETD4MaSSQ0qAoKzSYyAZcfRMd3o8";
+        //  String context_file = "Plant_cell";
+        //  String query = "Nucleus";
+        String expectedLink = "en.wikipedia.org";
+        String google_API = "https://www.googleapis.com/customsearch/v1?cref=&key=%s&q=%s&amp;cx=017576662512468239146:omuauf_lfve&amp;q=cars&amp;callback=hndlr";
+        URL obj = new URL(String.format(google_API, API_KEY, context_file.replace("_", "+")+"+"+query.replace(" ", "+")+"+wiki"));
+        HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+        con.setRequestMethod("GET");
+        con.setRequestProperty("User-Agent", USER_AGENT);
+        BufferedReader in = new BufferedReader(
+                new InputStreamReader(con.getInputStream()));
+        String inputLine;
+        StringBuffer response = new StringBuffer();
+
+        while ((inputLine = in.readLine()) != null) {
+            response.append(inputLine);
+        }
+        in.close();
+
+        String search_results = response.toString();
+        JSONObject json_res = new JSONObject(search_results);
+        JSONArray items = json_res.getJSONArray("items");
+        int best_score = -1;
+        String best_title = "";
+        for (int i = 0; i < items.length(); i++) {
+            JSONObject item = items.getJSONObject(i);
+            if(item.get("displayLink").equals(expectedLink)){
+                String link = (String) item.get("link");
+                String title = link.substring(link.lastIndexOf("/")+1);
+                String[] query_parts = query.split(" ");
+                String[] title_parts = title.split("_");
+                int score = calculate_match_score(query_parts, title_parts);
+                if(score > best_score){
+                    best_score = score;
+                    best_title = title;
+                }else if(score == best_score && query_parts.length == title_parts.length){
+                    best_score = score;
+                    best_title = title;
+                }
+            }
+        }
+
+        String url = "https://en.wikipedia.org/w/api.php?action=query&prop=extracts&format=json&exintro=&explaintext=&exsectionformat=plain&titles="+best_title;
+
+        obj = new URL(url);
+        con = (HttpURLConnection) obj.openConnection();
+        con.setRequestMethod("GET");
+        con.setRequestProperty("User-Agent", USER_AGENT);
+        in = new BufferedReader(
+                new InputStreamReader(con.getInputStream()));
+        response = new StringBuffer();
+
+        while ((inputLine = in.readLine()) != null) {
+            response.append(inputLine);
+        }
+        in.close();
+
+        String content = response.toString();
+        JSONObject json_obj = new JSONObject(content);
+        JSONObject pages = json_obj.getJSONObject("query").getJSONObject("pages");
+        Iterator<?> keys = pages.keys();
+        while( keys.hasNext() ) {
+            String key = (String)keys.next();
+            if ( pages.get(key) instanceof JSONObject ) {
+                String toSpeak = pages.getJSONObject(key).getString("extract");
+//                System.out.println(toSpeak);
+                desc = toSpeak;
+            }
+        }
+
+        return desc;
+
+    }
 
     // Old context format parser, without audio files
     public static void parseFile2(String filename) {
@@ -171,8 +267,6 @@ public class Utility {
 
     public static void parseFile(String filename) {
         try {
-//            envpath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS) + "/Tactile Reader";
-
             File file = new File(envpath + File.separator + filename, filename + ".txt");
 
             Log.wtf("MTP", "parsing: " + envpath + "/" + filename + "/" + filename + ".txt");
@@ -198,18 +292,17 @@ public class Utility {
             // Skip line = "="
             line = br.readLine();
             while ((line = br.readLine()) != null) {
-                titles.add(line.trim());
+                String title = line.trim();
+                titles.add(title);
                 line = br.readLine();
                 if (line.startsWith("$AUDIO$")) {
                     descriptions.add(line.trim());
                     line = br.readLine();
                 } else {
                     String desc = "";
-                    // Skip line = "$TEXT$"
-                    line = br.readLine();
-                    while (!line.equals("=")) {
-                        desc += line;
-                        line = br.readLine();
+                    try{
+                        desc = getDesc(filename, title);
+                    }catch(Exception e) {
                     }
                     descriptions.add(desc);
                 }
