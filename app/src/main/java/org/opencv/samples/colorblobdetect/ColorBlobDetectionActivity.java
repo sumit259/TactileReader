@@ -1,11 +1,13 @@
 package org.opencv.samples.colorblobdetect;
 
+import android.Manifest;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -13,6 +15,8 @@ import android.os.Message;
 import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.Display;
 import android.view.MotionEvent;
@@ -21,6 +25,7 @@ import android.view.View;
 import android.view.View.OnTouchListener;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.ArrayAdapter;
 import android.widget.Toast;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -63,9 +68,6 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
 
 //    String envpath = Environment.getDataDirectory().getPath() + File.separator + "Tactile Reader";
      final String envpath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS) + "/Tactile Reader";
-
-
-
     // private Scalar               mBlackColorHsv;
 
     private ColorBlobDetector mDetector;
@@ -138,6 +140,38 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
             switch (status) {
                 case LoaderCallbackInterface.SUCCESS: {
                     Log.i(TAG, "OpenCV loaded successfully");
+//                    //////RUNTIME PERMISSIONS
+//                    // Here, thisActivity is the current activity
+//                    if (ContextCompat.checkSelfPermission(getApplicationContext(),
+//                            Manifest.permission.CAMERA)
+//                            != PackageManager.PERMISSION_GRANTED) {
+//
+//                        // Should we show an explanation?
+//                        if (ActivityCompat.shouldShowRequestPermissionRationale(,
+//                                Manifest.permission.CAMERA)) {
+//                            Log.i("Request Permission", "Ask for permission");
+//
+//                            // Show an explanation to the user *asynchronously* -- don't block
+//                            // this thread waiting for the user's response! After the user
+//                            // sees the explanation, try again to request the permission.
+//
+//                        } else {
+//
+//                            // No explanation needed, we can request the permission.
+//
+//                            ActivityCompat.requestPermissions(getApplicationContext(),
+//                                    new String[]{Manifest.permission.CAMERA},
+//                                    Constants.MY_PERMISSIONS_REQUEST_OPEN_CAMERA);
+//
+//                            // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+//                            // app-defined int constant. The callback method gets the
+//                            // result of the request.
+//                        }
+//                    } else {
+//                        mOpenCvCameraView.enableView();
+//                        mOpenCvCameraView.setOnTouchListener(ColorBlobDetectionActivity.this);
+//                    }
+//                    //////RUNTIME PERMISSIONS
                     mOpenCvCameraView.enableView();
                     mOpenCvCameraView.setOnTouchListener(ColorBlobDetectionActivity.this);
                 }
@@ -159,7 +193,6 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
      */
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        Log.i(TAG, "called onCreate");
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -173,8 +206,36 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         filename = sp.getString("context_name", null);
 
         mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.color_blob_detection_activity_surface_view);
-        mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
-        mOpenCvCameraView.setCvCameraViewListener(this);
+
+        //////RUNTIME PERMISSIONS
+        // Here, thisActivity is the current activity
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.CAMERA)) {
+                Log.i("Request Permission", "Ask for permission");
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+            } else {
+                // No explanation needed, we can request the permission.
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.CAMERA},
+                        Constants.MY_PERMISSIONS_REQUEST_OPEN_CAMERA);
+            }
+        } else {
+//            mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.color_blob_detection_activity_surface_view);
+            mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
+            mOpenCvCameraView.setCvCameraViewListener(this);
+        }
+        //////RUNTIME PERMISSIONS
+
+//        mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.color_blob_detection_activity_surface_view);
+//        mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
+//        mOpenCvCameraView.setCvCameraViewListener(this);
 
         Log.i(TAG, "about to parse " + filename);
         mUtility = new Utility(getApplicationContext());
@@ -185,6 +246,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         isBluetooth = getIntent().getExtras().getBoolean("is_bluetooth");
         Log.i(TAG, "boolean value: " + isBluetooth);
 
+        // set up Bluetooth
         if(isBluetooth) {
             mBluetoothDeviceAddress = getIntent().getExtras().getString("bluetoothAddress");
             Log.i(TAG, "bluetoothAddress: " + mBluetoothDeviceAddress);
@@ -213,11 +275,14 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
             @Override
             public void onInit(int status) {
                 if (status != TextToSpeech.ERROR) {
-                    tts.setLanguage(Locale.ENGLISH);
-                    tts.speak(speakStr, TextToSpeech.QUEUE_FLUSH, null);
+                    tts.setLanguage(new Locale("hin", "IND", "variant"));
+                    Log.i("TTS", "TTS Set up.");
+//                    tts.setLanguage(Locale.ENGLISH);
+                    tts.speak(speakStr, TextToSpeech.QUEUE_FLUSH, null, "-1");
                 }
             }
         });
+        Log.i ("UtteranceProgList", "Starting to set UtteranceProgressListener.");
         tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
             int speakingId = -1;
             public int getId() {
@@ -237,10 +302,11 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
 
             @Override
             public void onError(String s) {
-
+                Log.i("UtteranceProgList", "Error: " + s);
             }
         });
-        tts.speak(speakStr, TextToSpeech.QUEUE_FLUSH, null, ""+-1);
+        Log.i ("UtteranceProgList", "UtteranceProgressListener set.");
+        tts.speak(speakStr, TextToSpeech.QUEUE_ADD, null, ""+-1);
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -449,19 +515,6 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         byte[] send = message.getBytes();
         mBluetoothService.write(send);
 
-    }
-
-    public Mat onCameraFrame1(CvCameraViewFrame inputFrame) {
-        mRgba = inputFrame.rgba();
-//        String centroidStrings = "anda \nmurgi \nchickentandoori \nchickenkorma \nkadhaichicken";
-        String centroidStrings = "{1,0}+{2,0}+{3,0}+1\n{4,5}+{6,7}+{8,9}+1\n" +
-                "{1,0}+{2,0}+{3,0}+1\n" +
-                "{4,5}+{6,7}+{8,9}+1\n{1,0}+{2,0}+{3,0}+1\n" +
-                "{4,5}+{6,7}+{8,9}+1\n{1,0}+{2,0}+{3,0}+1\n" +
-                "{4,5}+{6,7}+{8,9}+1\n{1,0}+{2,0}+{3,0}+1\n" +
-                "{4,5}+{6,7}+{8,9}+1\n";
-        sendMessage(centroidStrings);
-        return mRgba;
     }
 
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
@@ -693,8 +746,10 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                                                 Log.i(TAG, "toDescribe: " + toDescribe);
                                                 mUtility.changeLastLocation(pulsedPolygon, currSpeak);
                                                 //change
+                                                Log.i(TAG, "mp is playing: " + mUtility.mp.isPlaying());
                                                 if (!mUtility.mp.isPlaying()) {
                                                     final String speakStr = toDescribe;
+                                                    Log.i(TAG, "Adding to queue: " + speakStr);
                                                     tts.speak(speakStr, TextToSpeech.QUEUE_ADD, null, ""+currSpeak);
                                                     //tts.speak(speakStr, TextToSpeech.QUEUE_ADD, null);
                                                 }
@@ -1026,4 +1081,34 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
             }
         }
     };
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case Constants.MY_PERMISSIONS_REQUEST_OPEN_CAMERA: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+//                    mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.color_blob_detection_activity_surface_view);
+                    mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
+                    mOpenCvCameraView.setCvCameraViewListener(this);
+
+                } else {
+
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                    Log.i(TAG, "Open Camera: Permission Denied!");
+                }
+                return;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request
+        }
+    }
 }

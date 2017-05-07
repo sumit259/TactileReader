@@ -39,4 +39,6 @@ public interface Constants {
     int REQUEST_ENABLE_BT_SENDER = 2;
     int REQUEST_ENABLE_BT_RECEIVER = 3;
     int REQUEST_MAKE_DISCOVERABLE = 4;
+
+    public final int MY_PERMISSIONS_REQUEST_OPEN_CAMERA = 1;
 }
