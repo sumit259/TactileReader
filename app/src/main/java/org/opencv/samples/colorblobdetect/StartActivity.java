@@ -20,10 +20,13 @@ import android.view.Display;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -43,6 +46,10 @@ public class StartActivity extends Activity {
     TextView status_connection;
     RadioGroup or;
     Button make_discoverable;
+    ToggleButton toggle;
+
+    // online mode
+    boolean isOnlineMode;
 
     // bluetooth mode is on or off
     int bluetoothMode;
@@ -204,6 +211,16 @@ public class StartActivity extends Activity {
             }
         });
 
+        toggle = (ToggleButton) findViewById(R.id.toggleButton);
+        toggle.setChecked(false);
+        toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                isOnlineMode = isChecked;
+                Log.i("WIKI", "checked change: " + isChecked);
+            }
+        });
+
         status_connection = (TextView)findViewById(R.id.status_connect);
         status_connection.setText("");
 
@@ -230,6 +247,7 @@ public class StartActivity extends Activity {
                         Log.i(TAG, "opening colorBlobDetectionActivity with TTS enabled");
                         intent = new Intent(StartActivity.this, ColorBlobDetectionActivity.class);
                         intent.putExtra("is_bluetooth", false);
+                        intent.putExtra("is_online_mode", isOnlineMode);
                         startActivity(intent);
                         break;
                     case Constants.SCAN_AND_SEND:
@@ -237,6 +255,7 @@ public class StartActivity extends Activity {
                         Log.i(TAG, "opening colorBlobDetectionActivity with TTS disabled");
                         intent = new Intent(StartActivity.this, ColorBlobDetectionActivity.class);
                         intent.putExtra("is_bluetooth", true);
+                        intent.putExtra("is_online_mode", isOnlineMode);
                         Log.i(TAG, "address being sent: " + mBluetoothDeviceAddress);
                         intent.putExtra("bluetoothAddress", mBluetoothDeviceAddress);
                         startActivity(intent);
@@ -245,6 +264,7 @@ public class StartActivity extends Activity {
                         // TODO: work as receiver, open ShowCentroidsActivity
                         Log.i(TAG, "opening ShowCentroidsActivity");
                         intent = new Intent(StartActivity.this, ShowCentroidsActivity.class);
+                        intent.putExtra("is_online_mode", isOnlineMode);
                         startActivity(intent);
                         break;
                 }

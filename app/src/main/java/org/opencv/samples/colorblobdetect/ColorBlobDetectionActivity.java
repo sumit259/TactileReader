@@ -61,6 +61,8 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
     private Scalar mBlobColorHsvFF;
     private TextToSpeech tts;
 
+    private boolean cloudAlertGiven = false;
+
 //    String envpath = Environment.getDataDirectory().getPath() + File.separator + "Tactile Reader";
      final String envpath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS) + "/Tactile Reader";
 
@@ -131,6 +133,7 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
 
     // to distinguish b/w SCAN_AND_READ and SCAN_AND_SEND modes
     private boolean isBluetooth;
+    private boolean isOnlineMode;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -178,12 +181,15 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
 
         Log.i(TAG, "about to parse " + filename);
         mUtility = new Utility(getApplicationContext());
+        isOnlineMode = getIntent().getExtras().getBoolean("is_online_mode");
+        Log.i(TAG, "online mode value: " + isOnlineMode);
+        mUtility.setIsOnlineMode(isOnlineMode);
         mUtility.parseFile(filename);
 
         pulseState = -1;
 
         isBluetooth = getIntent().getExtras().getBoolean("is_bluetooth");
-        Log.i(TAG, "boolean value: " + isBluetooth);
+        Log.i(TAG, "bluetooth value: " + isBluetooth);
 
         if(isBluetooth) {
             mBluetoothDeviceAddress = getIntent().getExtras().getString("bluetoothAddress");
@@ -501,6 +507,15 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
                 ppState = 1;
             } else {
                 ppState = 0;
+            }
+
+            if(isOnlineMode && !cloudAlertGiven){
+                if(mUtility.isDataLoaded()){
+                    Log.wtf("WIKI", "cloud alert in color blob detection activity");
+                    String speakStr = "data downloaded. you can start scanning now";
+                    tts.speak(speakStr, TextToSpeech.QUEUE_FLUSH, null, ""+-1);
+                    cloudAlertGiven = true;
+                }
             }
 
             Log.i("PULSE", "PulseState: " + pulseState);
@@ -832,7 +847,9 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         double xDash = P.x * scalingFactor;
         double yDash = P.y * scalingFactor;
 
-        double theta = Math.atan(((double) blackCentroidsY.get(1).intValue() - (double) blackCentroidsY.get(0).intValue()) / ((double) blackCentroidsX.get(1).intValue() - (double) blackCentroidsX.get(0).intValue()));
+//        double theta = Math.atan(((double) blackCentroidsY.get(1).intValue() - (double) blackCentroidsY.get(0).intValue()) / ((double) blackCentroidsX.get(1).intValue() - (double) blackCentroidsX.get(0).intValue()));
+
+        double theta = Math.acos((mUtility.Corners[1].y - mUtility.Corners[0].y)*((double) blackCentroidsY.get(1).intValue() - (double) blackCentroidsY.get(0).intValue())+(mUtility.Corners[1].x - mUtility.Corners[0].x)*((double) blackCentroidsX.get(1).intValue() - (double) blackCentroidsX.get(0).intValue())/(tagDist*screenDist));
 
         if (mUtility.getOrientation() > 2) {
             theta = theta - Math.toRadians(180);

@@ -4,7 +4,10 @@ package org.opencv.samples.colorblobdetect;
  * Created by Nikhil on 4/22/2016.
  */
 
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.AssetManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -35,16 +38,11 @@ import java.text.BreakIterator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.StringTokenizer;
 import java.util.zip.ZipEntry;
-
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Iterator;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 public class Utility {
     static Context cont;
@@ -68,7 +66,11 @@ public class Utility {
     static List<List<Point>> regionPoints;
     static String audioFormat = ".wav";
     public static int orientation;
+    public static boolean isOnlineMode;
+    public static boolean dataLoaded = false;
     public static MediaPlayer mp = new MediaPlayer();
+
+    private static final int START_INTENT = 5;
 
 //    static String envpath = Environment.getDataDirectory().getPath() + File.separator + "Tactile Reader";
     static String envpath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS) + "/Tactile Reader";
@@ -114,96 +116,93 @@ public class Utility {
             | Y
      */
 
-    private static int calculate_match_score(String[] query_parts, String[] title_parts){
-        int num_matches = 0;
-        for(int i = 0; i < query_parts.length; i++){
-            String query_part = query_parts[i];
-            for(int j = 0; j < title_parts.length; j++){
-                String title_part = title_parts[j];
-                if(title_part.equalsIgnoreCase(query_part))
-                    num_matches++;
-            }
-        }
-        return num_matches;
-    }
-
-    private static String getDesc(String context_file, String query) throws Exception {
-
-        String desc = "";
-        final String USER_AGENT = "Mozilla/5.0";
-        final String API_KEY = "AIzaSyCzTM3ETD4MaSSQ0qAoKzSYyAZcfRMd3o8";
-        //  String context_file = "Plant_cell";
-        //  String query = "Nucleus";
-        String expectedLink = "en.wikipedia.org";
-        String google_API = "https://www.googleapis.com/customsearch/v1?cref=&key=%s&q=%s&amp;cx=017576662512468239146:omuauf_lfve&amp;q=cars&amp;callback=hndlr";
-        URL obj = new URL(String.format(google_API, API_KEY, context_file.replace("_", "+")+"+"+query.replace(" ", "+")+"+wiki"));
-        HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-        con.setRequestMethod("GET");
-        con.setRequestProperty("User-Agent", USER_AGENT);
-        BufferedReader in = new BufferedReader(
-                new InputStreamReader(con.getInputStream()));
-        String inputLine;
-        StringBuffer response = new StringBuffer();
-
-        while ((inputLine = in.readLine()) != null) {
-            response.append(inputLine);
-        }
-        in.close();
-
-        String search_results = response.toString();
-        JSONObject json_res = new JSONObject(search_results);
-        JSONArray items = json_res.getJSONArray("items");
-        int best_score = -1;
-        String best_title = "";
-        for (int i = 0; i < items.length(); i++) {
-            JSONObject item = items.getJSONObject(i);
-            if(item.get("displayLink").equals(expectedLink)){
-                String link = (String) item.get("link");
-                String title = link.substring(link.lastIndexOf("/")+1);
-                String[] query_parts = query.split(" ");
-                String[] title_parts = title.split("_");
-                int score = calculate_match_score(query_parts, title_parts);
-                if(score > best_score){
-                    best_score = score;
-                    best_title = title;
-                }else if(score == best_score && query_parts.length == title_parts.length){
-                    best_score = score;
-                    best_title = title;
-                }
-            }
-        }
-
-        String url = "https://en.wikipedia.org/w/api.php?action=query&prop=extracts&format=json&exintro=&explaintext=&exsectionformat=plain&titles="+best_title;
-
-        obj = new URL(url);
-        con = (HttpURLConnection) obj.openConnection();
-        con.setRequestMethod("GET");
-        con.setRequestProperty("User-Agent", USER_AGENT);
-        in = new BufferedReader(
-                new InputStreamReader(con.getInputStream()));
-        response = new StringBuffer();
-
-        while ((inputLine = in.readLine()) != null) {
-            response.append(inputLine);
-        }
-        in.close();
-
-        String content = response.toString();
-        JSONObject json_obj = new JSONObject(content);
-        JSONObject pages = json_obj.getJSONObject("query").getJSONObject("pages");
-        Iterator<?> keys = pages.keys();
-        while( keys.hasNext() ) {
-            String key = (String)keys.next();
-            if ( pages.get(key) instanceof JSONObject ) {
-                String toSpeak = pages.getJSONObject(key).getString("extract");
-//                System.out.println(toSpeak);
-                desc = toSpeak;
-            }
-        }
-
-        return desc;
-
-    }
+//    private static int calculate_match_score(String[] query_parts, String[] title_parts){
+//        int num_matches = 0;
+//        for(int i = 0; i < query_parts.length; i++){
+//            String query_part = query_parts[i];
+//            for(int j = 0; j < title_parts.length; j++){
+//                String title_part = title_parts[j];
+//                if(title_part.equalsIgnoreCase(query_part))
+//                    num_matches++;
+//            }
+//        }
+//        return num_matches;
+//    }
+//
+//    private static String getDesc(String context_file, String query) throws Exception {
+//        String desc = "";
+//        final String USER_AGENT = "Mozilla/5.0";
+//        final String API_KEY = "AIzaSyCzTM3ETD4MaSSQ0qAoKzSYyAZcfRMd3o8";
+//        String expectedLink = "en.wikipedia.org";
+//        String google_API = "https://www.googleapis.com/customsearch/v1?cref=&key=%s&q=%s&amp;cx=017576662512468239146:omuauf_lfve&amp;q=cars&amp;callback=hndlr";
+//        URL obj = new URL(String.format(google_API, API_KEY, context_file.replace("_", "+")+"+"+query.replace(" ", "+")+"+wiki"));
+//        HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+//        con.setRequestMethod("GET");
+//        con.setRequestProperty("User-Agent", USER_AGENT);
+//        BufferedReader in = new BufferedReader(
+//                new InputStreamReader(con.getInputStream()));
+//        String inputLine;
+//        StringBuffer response = new StringBuffer();
+//
+//        while ((inputLine = in.readLine()) != null) {
+//            response.append(inputLine);
+//        }
+//        in.close();
+//
+//        String search_results = response.toString();
+//        JSONObject json_res = new JSONObject(search_results);
+//        JSONArray items = json_res.getJSONArray("items");
+//        int best_score = -1;
+//        String best_title = "";
+//        for (int i = 0; i < items.length(); i++) {
+//            JSONObject item = items.getJSONObject(i);
+//            if(item.get("displayLink").equals(expectedLink)){
+//                String link = (String) item.get("link");
+//                String title = link.substring(link.lastIndexOf("/")+1);
+//                String[] query_parts = query.split(" ");
+//                String[] title_parts = title.split("_");
+//                int score = calculate_match_score(query_parts, title_parts);
+//                if(score > best_score){
+//                    best_score = score;
+//                    best_title = title;
+//                }else if(score == best_score && query_parts.length == title_parts.length){
+//                    best_score = score;
+//                    best_title = title;
+//                }
+//            }
+//        }
+//
+//        String url = "https://en.wikipedia.org/w/api.php?action=query&prop=extracts&format=json&exintro=&explaintext=&exsectionformat=plain&titles="+best_title;
+//
+//        obj = new URL(url);
+//        con = (HttpURLConnection) obj.openConnection();
+//        con.setRequestMethod("GET");
+//        con.setRequestProperty("User-Agent", USER_AGENT);
+//        in = new BufferedReader(
+//                new InputStreamReader(con.getInputStream()));
+//        response = new StringBuffer();
+//
+//        while ((inputLine = in.readLine()) != null) {
+//            response.append(inputLine);
+//        }
+//        in.close();
+//
+//        String content = response.toString();
+//        JSONObject json_obj = new JSONObject(content);
+//        JSONObject pages = json_obj.getJSONObject("query").getJSONObject("pages");
+//        Iterator<?> keys = pages.keys();
+//        while( keys.hasNext() ) {
+//            String key = (String)keys.next();
+//            if ( pages.get(key) instanceof JSONObject ) {
+//                String toSpeak = pages.getJSONObject(key).getString("extract");
+////                System.out.println(toSpeak);
+//                desc = toSpeak;
+//            }
+//        }
+//
+//        return desc;
+//
+//    }
 
     // Old context format parser, without audio files
     public static void parseFile2(String filename) {
@@ -291,20 +290,34 @@ public class Utility {
             }
             // Skip line = "="
             line = br.readLine();
+            HashMap<String, List<String>> hash_map = new HashMap<>();
             while ((line = br.readLine()) != null) {
                 String title = line.trim();
                 titles.add(title);
                 line = br.readLine();
-                if (line.startsWith("$AUDIO$")) {
-                    descriptions.add(line.trim());
-                    line = br.readLine();
-                } else {
-                    String desc = "";
-                    try{
-                        desc = getDesc(filename, title);
-                    }catch(Exception e) {
+                if(isOnlineMode) {
+                    if (line.startsWith("$AUDIO$")) {
+                        line = br.readLine();
+                    } else {
+                        line = br.readLine();
+                        while (!line.equals("=")) {
+                            line = br.readLine();
+                        }
                     }
-                    descriptions.add(desc);
+                }else {
+                    if (line.startsWith("$AUDIO$")) {
+                        descriptions.add(line.trim());
+                        line = br.readLine();
+                    } else {
+                        String desc = "";
+                        // Skip line = "$TEXT$"
+                        line = br.readLine();
+                        while (!line.equals("=")) {
+                            desc += line;
+                            line = br.readLine();
+                        }
+                        descriptions.add(desc);
+                    }
                 }
                 // Skip line = "="
                 line = br.readLine();
@@ -320,21 +333,65 @@ public class Utility {
             }
             br.close();
 
-            // break text into lines
-            BreakIterator breakIterator = BreakIterator.getSentenceInstance(Locale.US);
-            int idx = 0, start;
+            if(isOnlineMode) {
+                hash_map.put("titles", titles);
+                hash_map.put("descriptions", descriptions);
+                List<String> cont_file = new ArrayList<>();
+                cont_file.add(filename);
+                hash_map.put("file", cont_file);
+                Log.wtf("WIKI", "hash_map: " + hash_map);
+                try {
+                    new DownloadService(new myAsyncTaskCompletedListener() {
+                        @Override
+                        public void onMyAsyncTaskCompleted(int responseCode, List<String> result) {
+                            switch (responseCode) {
+                                case START_INTENT:
+                                    Log.wtf("WIKI", "alert!!");
+                                    BreakIterator breakIterator = BreakIterator.getSentenceInstance(Locale.US);
+                                    int idx = 0, start;
+                                    for (String desc : descriptions) {
+                                        breakIterator.setText(desc);
+                                        start = breakIterator.first();
+                                        List<String> statements = new ArrayList<>();
+                                        for (int end = breakIterator.next(); end != BreakIterator.DONE; start = end, end = breakIterator.next()) {
+                                            statements.add(desc.substring(start, end));
+                                            Log.wtf("WIKI", idx+": "+desc.substring(start, end));
+                                        }
+                                        descriptionStatements.add(idx, statements);
+                                        idx++;
+                                        lastLocation.add(0);
+                                        lastLocationAudio.add(0);
+                                    }
+                                    dataLoaded = true;
+                                    break;
+                                default:
+                                    Log.wtf("WIKI", "wtf!!");
+                            }
+                        }
+                    }, START_INTENT).execute(hash_map);
 
-            for(String desc : descriptions) {
-                breakIterator.setText(desc);
-                start = breakIterator.first();
-                List<String> statements = new ArrayList<>();
-                for(int end = breakIterator.next(); end != BreakIterator.DONE; start = end, end = breakIterator.next()) {
-                    statements.add(desc.substring(start, end));
+                } catch (Exception e) {
+                    Log.wtf("WIKI", "exception!!");
+                    e.printStackTrace();
                 }
-                descriptionStatements.add(idx, statements);
-                idx++;
-                lastLocation.add(0);
-                lastLocationAudio.add(0);
+            }else {
+
+                // break text into lines
+                BreakIterator breakIterator = BreakIterator.getSentenceInstance(Locale.US);
+                int idx = 0, start;
+
+                for (String desc : descriptions) {
+                    breakIterator.setText(desc);
+                    start = breakIterator.first();
+                    List<String> statements = new ArrayList<>();
+                    for (int end = breakIterator.next(); end != BreakIterator.DONE; start = end, end = breakIterator.next()) {
+                        statements.add(desc.substring(start, end));
+                    }
+                    descriptionStatements.add(idx, statements);
+                    idx++;
+                    lastLocation.add(0);
+                    lastLocationAudio.add(0);
+                }
             }
 
         } catch (
@@ -349,6 +406,11 @@ public class Utility {
     public static boolean isPulse() {
         return (ColorBlobDetectionActivity.pulseState == 2);
     }
+
+    public static void setIsOnlineMode(boolean val){
+        isOnlineMode = val;
+    }
+    public static boolean isDataLoaded() { return dataLoaded; }
 
     public static boolean isSpeaking() {
         Log.i("MP", "MediaPlayer Status: " + mp.isPlaying());

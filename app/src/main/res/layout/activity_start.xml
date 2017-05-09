@@ -165,5 +165,23 @@
         android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true" />
 
+    <TextView
+        android:text="Online Mode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/status_connect"
+        android:layout_alignParentStart="true"
+        android:layout_marginBottom="24dp"
+        android:id="@+id/online_mode"
+        android:textSize="24sp" />
+
+    <ToggleButton
+        android:text="ToggleButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/toggleButton"
+        android:layout_alignTop="@+id/online_mode"
+        android:layout_centerHorizontal="true" />
+
 
 </RelativeLayout>
