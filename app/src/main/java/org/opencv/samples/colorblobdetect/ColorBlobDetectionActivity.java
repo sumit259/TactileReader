@@ -182,7 +182,6 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         Log.i(TAG, "about to parse " + filename);
         mUtility = new Utility(getApplicationContext());
         isOnlineMode = getIntent().getExtras().getBoolean("is_online_mode");
-        Log.i(TAG, "online mode value: " + isOnlineMode);
         mUtility.setIsOnlineMode(isOnlineMode);
         mUtility.parseFile(filename);
 
@@ -219,8 +218,8 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
             @Override
             public void onInit(int status) {
                 if (status != TextToSpeech.ERROR) {
-//                    tts.setLanguage(Locale.ENGLISH);
-                    tts.setLanguage(new Locale("hin", "IND", "variant"));
+                    tts.setLanguage(Locale.ENGLISH);
+//                    tts.setLanguage(new Locale("hin", "IND", "variant"));
                     tts.speak(speakStr, TextToSpeech.QUEUE_FLUSH, null);
                 }
             }
@@ -804,18 +803,19 @@ public class ColorBlobDetectionActivity extends Activity implements OnTouchListe
         Log.i("TTS", "speakOut: toSpeak: " + toSpeak);
         if (!mUtility.mp.isPlaying() && !tts.isSpeaking()) {
             final String speakStr = toSpeak;
-            tts = new TextToSpeech(applicationContext, new TextToSpeech.OnInitListener() {
-                @Override
-                public void onInit(int status) {
-                    Log.i("TTS", "Status = " + status);
-                    //TODO: read addSpeech
-                    if (status != TextToSpeech.ERROR) {
-                        Log.i("TTS", "speakOut: speaking: " + speakStr);
-                        tts.setLanguage(Locale.ENGLISH);
-                        tts.speak(speakStr, TextToSpeech.QUEUE_ADD, null);
-                    }
-                }
-            });
+            tts.speak(speakStr, TextToSpeech.QUEUE_FLUSH, null, "-1");
+//            tts = new TextToSpeech(applicationContext, new TextToSpeech.OnInitListener() {
+//                @Override
+//                public void onInit(int status) {
+//                    Log.i("TTS", "Status = " + status);
+//                    //TODO: read addSpeech
+//                    if (status != TextToSpeech.ERROR) {
+//                        Log.i("TTS", "speakOut: speaking: " + speakStr);
+//                        tts.setLanguage(Locale.ENGLISH);
+//                        tts.speak(speakStr, TextToSpeech.QUEUE_ADD, null);
+//                    }
+//                }
+//            });
         }
     }
     /*

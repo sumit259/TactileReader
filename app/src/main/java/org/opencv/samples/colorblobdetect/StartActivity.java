@@ -46,7 +46,7 @@ public class StartActivity extends Activity {
     TextView status_connection;
     RadioGroup or;
     Button make_discoverable;
-    ToggleButton toggle;
+    ToggleButton toggleOnlineMode;
 
     // online mode
     boolean isOnlineMode;
@@ -211,9 +211,9 @@ public class StartActivity extends Activity {
             }
         });
 
-        toggle = (ToggleButton) findViewById(R.id.toggleButton);
-        toggle.setChecked(false);
-        toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        toggleOnlineMode = (ToggleButton) findViewById(R.id.toggleButton);
+        toggleOnlineMode.setChecked(false);
+        toggleOnlineMode.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 isOnlineMode = isChecked;

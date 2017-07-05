@@ -59,6 +59,8 @@ public class ShowCentroidsActivity extends Activity {
     private int currSpeak;
     private int currSpeakAudio;
     private boolean inPolygon = false;
+    private boolean isOnlineMode;
+    private boolean cloudAlertGiven = false;
 
     final String envpath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS) + "/Tactile Reader";
 
@@ -76,6 +78,8 @@ public class ShowCentroidsActivity extends Activity {
 
         Log.i(TAG, "about to parse " + filename);
         mUtility = new Utility(getApplicationContext());
+        isOnlineMode = getIntent().getExtras().getBoolean("is_online_mode");
+        mUtility.setIsOnlineMode(isOnlineMode);
         mUtility.parseFile(filename);
 
         corner1 = (TextView)findViewById(R.id.Corner1);
@@ -105,7 +109,8 @@ public class ShowCentroidsActivity extends Activity {
             @Override
             public void onInit(int status) {
                 if (status != TextToSpeech.ERROR) {
-                    tts.setLanguage(Locale.ENGLISH);
+//                    tts.setLanguage(Locale.ENGLISH);
+                    tts.setLanguage(new Locale("hin", "IND", "variant"));
                     tts.speak(speakStr, TextToSpeech.QUEUE_FLUSH, null);
                 }
             }
@@ -172,6 +177,12 @@ public class ShowCentroidsActivity extends Activity {
 
         chars = fingerCentroidX + ", " + fingerCentroidY;
         finger.setText(chars);
+
+        if(isOnlineMode && !mUtility.isDataLoaded()){
+            Log.wtf("WIKI", "thand rakh");
+            String speakStr = "data download in progress, please wait";
+            tts.speak(speakStr, TextToSpeech.QUEUE_FLUSH, null, ""+-1);
+        }
 
         Log.i("CENTROIDS", "Finger: " + fingerCentroidX + " " + fingerCentroidY);
         Log.i("CENTROIDS", "Blob1: " + blackCentroidsX.get(0) + " " + blackCentroidsY.get(0));
@@ -360,24 +371,23 @@ public class ShowCentroidsActivity extends Activity {
 
 
 
-    // can move to utility?
     private Point normalizePoint(Point P) {
         double scalingFactor;
 
-        // Log.i(TAG, "Corner1: " + blackCentroidsX.get(l) + " " + blackCentroidsY.get(l));
-        // Log.i(TAG, "Corner2: " + blackCentroidsX.get(h) + " " + blackCentroidsY.get(h));
-
         // Find screen dist
-        double ySQR = Math.pow((double) blackCentroidsY.get(1).intValue() - (double) blackCentroidsY.get(0).intValue(), 2);
-        double xSQR = Math.pow((double) blackCentroidsX.get(1).intValue() - (double) blackCentroidsX.get(0).intValue(), 2);
-        double screenDist = Math.pow(xSQR + ySQR, 0.5);
+        double dy1 = (double) blackCentroidsY.get(1).intValue() - (double) blackCentroidsY.get(0).intValue();
+        double dx1 = (double) blackCentroidsX.get(1).intValue() - (double) blackCentroidsX.get(0).intValue();
+        double screenDist = Math.pow(dx1*dx1 + dy1*dy1, 0.5);
 
-        scalingFactor = ((double) Math.abs(mUtility.Corners[1].x - mUtility.Corners[0].x)) / screenDist;
+        double dy2 = mUtility.Corners[1].y - mUtility.Corners[0].y;
+        double dx2 = mUtility.Corners[1].x - mUtility.Corners[0].x;
+        double tagDist = Math.pow(dx2*dx2 + dy2*dy2, 0.5);
+        scalingFactor = tagDist / screenDist;
 
         double xDash = P.x * scalingFactor;
         double yDash = P.y * scalingFactor;
 
-        double theta = Math.atan(((double) blackCentroidsY.get(1).intValue() - (double) blackCentroidsY.get(0).intValue()) / ((double) blackCentroidsX.get(1).intValue() - (double) blackCentroidsX.get(0).intValue()));
+        double theta = Math.acos((dx1*dx2+dy1*dy2)/(tagDist*screenDist));
 
         if (mUtility.getOrientation() > 2) {
             theta = theta - Math.toRadians(180);

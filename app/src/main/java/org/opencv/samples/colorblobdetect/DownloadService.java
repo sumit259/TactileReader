@@ -24,7 +24,7 @@ interface myAsyncTaskCompletedListener {
     void onMyAsyncTaskCompleted(int responseCode, List<String> result);
 }
 
-public class DownloadService extends AsyncTask<HashMap<String, List<String>>, Void, List<String>>{
+public class DownloadService extends AsyncTask<HashMap<String, Object>, Void, List<String>>{
 
     private myAsyncTaskCompletedListener listener;
     private int responseCode = 0;
@@ -50,7 +50,8 @@ public class DownloadService extends AsyncTask<HashMap<String, List<String>>, Vo
     private String getDesc(String context_file, String query) throws Exception {
         String desc = "";
         final String USER_AGENT = "Mozilla/5.0";
-        final String API_KEY = "AIzaSyCzTM3ETD4MaSSQ0qAoKzSYyAZcfRMd3o8";
+//        final String API_KEY = "AIzaSyCzTM3ETD4MaSSQ0qAoKzSYyAZcfRMd3o8";
+        final String API_KEY = "AIzaSyC4wsy3HeVgGkSVB709cgWkbnECDysCwHQ";
         String expectedLink = "en.wikipedia.org";
         String google_API = "https://www.googleapis.com/customsearch/v1?cref=&key=%s&q=%s&amp;cx=017576662512468239146:omuauf_lfve&amp;q=cars&amp;callback=hndlr";
         URL obj = new URL(String.format(google_API, API_KEY, context_file.replace("_", "+")+"+"+query.replace(" ", "+")+"+wiki"));
@@ -120,19 +121,20 @@ public class DownloadService extends AsyncTask<HashMap<String, List<String>>, Vo
     }
 
     @Override
-    protected List<String> doInBackground(HashMap<String, List<String>>... params) {
-        HashMap<String, List<String>> map_titles = params[0];
+    protected List<String> doInBackground(HashMap<String, Object>... params) {
+        HashMap<String, Object> map_titles = params[0];
         Log.wtf("DS", "in doInBackground");
         Log.wtf("DS", ""+map_titles);
-        List<String> titles = map_titles.get("titles");
-        List<String> desc = map_titles.get("descriptions");
-        String filename = map_titles.get("file").get(0);
+        List<String> titles = (List<String>) map_titles.get("titles");
+        List<String> desc = (List<String>) map_titles.get("descriptions");
+        String filename = (String) map_titles.get("file");
         for(String title: titles){
             Log.wtf("DS", "--> "+title);
             try {
                 String description = getDesc(filename, title);
                 desc.add(description.replace('\n',' '));
             } catch (Exception e) {
+                e.printStackTrace();
                 desc.add("error");
             }
         }
