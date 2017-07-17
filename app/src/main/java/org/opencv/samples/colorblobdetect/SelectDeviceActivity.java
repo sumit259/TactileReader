@@ -1,5 +1,6 @@
 package org.opencv.samples.colorblobdetect;
 
+import android.Manifest;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -7,7 +8,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.view.SurfaceView;
 import android.view.View;
 import android.util.Log;
 import android.widget.AdapterView;
@@ -16,7 +21,9 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import java.util.ArrayList;
 import java.util.Set;
+import java.util.List;
 import java.util.StringTokenizer;
 
 public class SelectDeviceActivity extends Activity {
@@ -118,7 +125,35 @@ public class SelectDeviceActivity extends Activity {
         }
 
         // Request discover from BluetoothAdapter
-        mBtAdapter.startDiscovery();
+
+        ////// RUNTIME PERMISSIONS FOR ANDROID VERSIONS > 23
+
+        int accessCoarseLocation = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_COARSE_LOCATION);
+        int accessFineLocation = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION);
+
+        List<String> listRequestPermission = new ArrayList<String>();
+
+        if(accessCoarseLocation != PackageManager.PERMISSION_GRANTED){
+            listRequestPermission.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+        }
+
+        if(accessFineLocation != PackageManager.PERMISSION_GRANTED){
+            listRequestPermission.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+
+        if(!listRequestPermission.isEmpty()){
+            Log.i("Request Permission", "permission request");
+            String[] strRequestPermission = listRequestPermission.toArray(new String[listRequestPermission.size()]);
+            ActivityCompat.requestPermissions(this,
+                    strRequestPermission,
+                    Constants.MY_PERMISSIONS_REQUEST_START_SCAN_BLUETOOTH);
+        } else {
+            Log.i("Request Permission", "permission granted");
+            mBtAdapter.startDiscovery();
+        }
+        ////// RUNTIME PERMISSIONS FOR ANDROID VERSIONS > 23
     }
 
     /**
@@ -172,5 +207,37 @@ public class SelectDeviceActivity extends Activity {
             }
         }
     };
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case Constants.MY_PERMISSIONS_REQUEST_START_SCAN_BLUETOOTH: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0) {
+
+                    for (int gr : grantResults){
+                        if(gr != PackageManager.PERMISSION_GRANTED){
+                            Log.i(TAG, "Start scan bluetooth: Permission Denied!");
+                            return;
+                        }
+                    }
+
+                    // permission was granted, yay! start the discovery
+                    Log.i(TAG, "Start scan bluetooth: Permission granted!");
+                    mBtAdapter.startDiscovery();
+
+                } else {
+
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                    Log.i(TAG, "Start scan bluetooth: Permission Denied!");
+                }
+                return;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request
+        }
+    }
 
 }

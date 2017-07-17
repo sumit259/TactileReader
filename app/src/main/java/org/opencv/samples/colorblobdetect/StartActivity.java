@@ -1,5 +1,6 @@
 package org.opencv.samples.colorblobdetect;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
@@ -9,12 +10,15 @@ import android.content.DialogInterface;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.Display;
 import android.view.View;
@@ -79,31 +83,61 @@ public class StartActivity extends Activity {
 
         spinner = (Spinner)findViewById(R.id.spinner);
 
-        ArrayList<String> filenames = new ArrayList<>();
-        Log.wtf("MTP", "Path: " + envpath);
-        File f = new File(envpath);
-        Log.d("MTP", "Dir read 1");
 
-        if (!f.exists()) {
-            f.mkdir();
-            Log.wtf("MTP", "MKDIR executed");
-        }
+        ////// RUNTIME PERMISSIONS FOR ANDROID VERSIONS > 23
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.READ_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
 
-        File files[] = f.listFiles();
-        if(files!=null){
-            Log.d("MTP", "Size: "+ files.length);
-            for (int i=0; i < files.length; i++) {
-                filenames.add(files[i].getName());
-                Log.d("MTP", "FileName:" + files[i].getName());
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE)) {
+                Log.i("Request Permission", "Ask for permission");
+
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+
+            } else {
+
+                // No explanation needed, we can request the permission.
+
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                        Constants.MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE);
+
+                // MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE is an
+                // app-defined int constant. The callback method gets the
+                // result of the request.
             }
-        }
+        } else {
+            ArrayList<String> filenames = new ArrayList<>();
+            Log.wtf("MTP", "Path: " + envpath);
+            File f = new File(envpath);
+            Log.d("MTP", "Dir read 1");
 
-        if(filenames==null){
-            filenames.add(0, "No saved Contexts");
+            if (!f.exists()) {
+                f.mkdir();
+                Log.wtf("MTP", "MKDIR executed");
+            }
+
+            File files[] = f.listFiles();
+            if (files != null) {
+                Log.d("MTP", "Size: " + files.length);
+                for (int i = 0; i < files.length; i++) {
+                    filenames.add(files[i].getName());
+                    Log.d("MTP", "FileName:" + files[i].getName());
+                }
+            }
+
+            if (filenames == null) {
+                filenames.add(0, "No saved Contexts");
+            }
+            ArrayAdapter<String> dataAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, filenames);
+            dataAdapter.setDropDownViewResource(android.R.layout.simple_dropdown_item_1line);
+            spinner.setAdapter(dataAdapter);
         }
-        ArrayAdapter<String> dataAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, filenames);
-        dataAdapter.setDropDownViewResource(android.R.layout.simple_dropdown_item_1line);
-        spinner.setAdapter(dataAdapter);
+        ////// RUNTIME PERMISSIONS FOR ANDROID VERSIONS > 23
 
         // selecting color of tags for reading
         colortv = (TextView)findViewById(R.id.colortv);
@@ -411,6 +445,57 @@ public class StartActivity extends Activity {
 //                    mBluetoothService.start();
 //                }
                 break;
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case Constants.MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+                    Log.wtf("MTP", "Path: " + envpath);
+                    File f = new File(envpath);
+                    Log.d("MTP", "Dir read 1");
+
+                    if (!f.exists()) {
+                        f.mkdir();
+                        Log.wtf("MTP", "MKDIR executed");
+                    }
+                    ArrayList<String> filenames = new ArrayList<>();
+                    File files[] = f.listFiles();
+                    if(files!=null){
+                        Log.d("MTP", "Size: "+ files.length);
+                        for (int i=0; i < files.length; i++) {
+                            filenames.add(files[i].getName());
+                            Log.d("MTP", "FileName:" + files[i].getName());
+                        }
+                    } else {
+                        Log.i("MTP", "files is NULL!!");
+                    }
+
+                    if(filenames==null){
+                        filenames.add(0, "No saved Contexts");
+                    }
+                    ArrayAdapter<String> dataAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, filenames);
+                    dataAdapter.setDropDownViewResource(android.R.layout.simple_dropdown_item_1line);
+                    spinner.setAdapter(dataAdapter);
+
+                } else {
+
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                    Log.i("MTP", "Read External Storage: Permission Denied!");
+                }
+                return;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request
         }
     }
 

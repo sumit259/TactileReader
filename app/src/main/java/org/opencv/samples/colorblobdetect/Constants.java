@@ -39,4 +39,9 @@ public interface Constants {
     int REQUEST_ENABLE_BT_SENDER = 2;
     int REQUEST_ENABLE_BT_RECEIVER = 3;
     int REQUEST_MAKE_DISCOVERABLE = 4;
+
+    // External permissions request codes
+    int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 1;
+    int MY_PERMISSIONS_REQUEST_OPEN_CAMERA = 2;
+    int MY_PERMISSIONS_REQUEST_START_SCAN_BLUETOOTH = 3;
 }
