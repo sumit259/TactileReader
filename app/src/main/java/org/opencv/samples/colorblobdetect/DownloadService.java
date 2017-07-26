@@ -53,7 +53,7 @@ public class DownloadService extends AsyncTask<HashMap<String, Object>, Void, Li
 //        final String API_KEY = "AIzaSyCzTM3ETD4MaSSQ0qAoKzSYyAZcfRMd3o8";
         final String API_KEY = "AIzaSyC4wsy3HeVgGkSVB709cgWkbnECDysCwHQ";
         String expectedLink = "en.wikipedia.org";
-        String google_API = "https://www.googleapis.com/customsearch/v1?cref=&key=%s&q=%s&amp;cx=017576662512468239146:omuauf_lfve&amp;q=cars&amp;callback=hndlr";
+        String google_API = "https://www.googleapis.com/customsearch/v1?key=%s&q=%s&cx=007211860911857940359:zvwcr2pk6ke";
         URL obj = new URL(String.format(google_API, API_KEY, context_file.replace("_", "+")+"+"+query.replace(" ", "+")+"+wiki"));
         HttpURLConnection con = (HttpURLConnection) obj.openConnection();
         con.setRequestMethod("GET");
